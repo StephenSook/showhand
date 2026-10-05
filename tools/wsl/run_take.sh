@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 # Run one local Showhand take and stop every process this script starts.
-# Usage: run_take.sh TAKE_VIDEO OUTPUT_ROOT RUN_ID
-# OUTPUT_ROOT must be a new gitignored directory inside this repository.
+# Usage: run_take.sh [--from render] TAKE_VIDEO OUTPUT_ROOT RUN_ID
+# A new OUTPUT_ROOT must be a gitignored directory inside this repository.
+# --from render resumes after a saved replay that already passed the frozen gates.
 # Thresholds, jitter, drain, and the support-band release are unchanged.
 set -euo pipefail
 
+from_render=0
+if [ "${1:-}" = "--from" ]; then
+  if [ "${2:-}" != "render" ] || [ "$#" -ne 5 ]; then
+    echo "usage: run_take.sh [--from render] TAKE_VIDEO OUTPUT_ROOT RUN_ID" >&2
+    exit 2
+  fi
+  from_render=1
+  shift 2
+fi
 if [ "$#" -ne 3 ]; then
-  echo "usage: run_take.sh TAKE_VIDEO OUTPUT_ROOT RUN_ID" >&2
+  echo "usage: run_take.sh [--from render] TAKE_VIDEO OUTPUT_ROOT RUN_ID" >&2
   exit 2
 fi
 
@@ -150,8 +160,12 @@ if [ ! -f "$take_video" ]; then
   echo "take video does not exist: $take_video" >&2
   exit 2
 fi
-if [ -e "$output_root" ]; then
+if [ "$from_render" -eq 0 ] && [ -e "$output_root" ]; then
   echo "refusing existing OUTPUT_ROOT: $output_root" >&2
+  exit 2
+fi
+if [ "$from_render" -eq 1 ] && [ ! -d "$output_root" ]; then
+  echo "render resume needs an existing OUTPUT_ROOT: $output_root" >&2
   exit 2
 fi
 
@@ -234,6 +248,114 @@ print(
 PY
 )
 source_fps=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["fps"])' "$probe_json")
+
+if [ "$from_render" -eq 1 ]; then
+  if [ ! -f "$output_root/driver/probe.json" ]; then
+    die "render resume is missing the saved video probe"
+  fi
+  python3 - "$output_root/driver/probe.json" "$probe_json" <<'PY'
+import json
+import sys
+
+saved = json.loads(open(sys.argv[1], encoding="utf-8").read())
+fresh = json.loads(sys.argv[2])
+if saved != fresh:
+    raise SystemExit("saved probe does not match the take video")
+PY
+  if [ ! -f "$output_root/replay_timing.json" ] \
+    || [ ! -f "$output_root/sim/telemetry.csv" ] \
+    || [ ! -f "$output_root/sim/sim_meta.json" ]; then
+    die "render resume is missing replay timing, telemetry, or simulator metadata"
+  fi
+  saved_run=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["run_id"])' \
+    "$output_root/replay_timing.json")
+  if [ "$saved_run" != "$run_id" ]; then
+    die "replay timing run_id is $saved_run, want $run_id"
+  fi
+  if [ ! -f "$output_root/source.mp4" ]; then
+    die "render resume is missing the copied source video"
+  fi
+  source_hash=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$take_video")
+  copy_hash=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$output_root/source.mp4")
+  if [ "$source_hash" != "$copy_hash" ]; then
+    die "saved source bytes differ from the take"
+  fi
+  hpe_results=$output_root/gemx/$take_stem/hpe_results.pt
+  retarget_csv=$output_root/gemx/$take_stem/${take_stem}_retarget_g1.csv
+  if [ ! -f "$hpe_results" ] || [ ! -f "$retarget_csv" ]; then
+    die "GEM-X outputs are missing from the saved run"
+  fi
+  sonic_native=/tmp/showhand-sonic-$run_id
+  mkdir -p "$output_root/logs" "$output_root/sonic_logs"
+  if [ ! -f "$output_root/sonic_logs/console.log" ]; then
+    if [ ! -f "$sonic_native/console.log" ]; then
+      die "SONIC console log is missing"
+    fi
+    cp -a "$sonic_native/." "$output_root/sonic_logs/"
+  fi
+  if ! grep -q "SHOWHAND_RUN_END=$run_id exit=0" "$output_root/sonic_logs/console.log"; then
+    die "SONIC console is missing the successful run-end marker"
+  fi
+  trap cleanup EXIT INT TERM
+  win_repo=$(wslpath -w "$repo")
+  if [ -f "$repo/.venv/Scripts/showhand.exe" ]; then
+    win_showhand=$(wslpath -w "$repo/.venv/Scripts/showhand.exe")
+  elif [ -x "$repo/.venv/bin/python" ]; then
+    win_showhand=""
+  else
+    win_showhand=$(wslpath -w "$repo/.venv/Scripts/showhand")
+  fi
+  current_log=$output_root/logs/validate-replay.log
+  echo "SHOWHAND_STAGE=validate_replay_start"
+  if [ -n "$win_showhand" ]; then
+    python3 - "$output_root/driver/validate.ps1" "$win_repo" "$win_showhand" \
+      "$(wslpath -w "$output_root/replay_timing.json")" \
+      "$(wslpath -w "$output_root/sim/sim_meta.json")" \
+      "$(wslpath -w "$output_root/sim/telemetry.csv")" \
+      "$(wslpath -w "$output_root/sonic_logs/console.log")" <<'PY'
+import sys
+from pathlib import Path
+
+ps1, repo, showhand, timing, meta, telemetry, console = sys.argv[1:]
+Path(ps1).write_text(
+    "\n".join(
+        [
+            "$ErrorActionPreference = 'Continue'",
+            f"Set-Location '{repo}'",
+            f"& '{showhand}' validate-replay `",
+            f"  --replay-timing '{timing}' `",
+            f"  --sim-meta '{meta}' `",
+            f"  --telemetry '{telemetry}' `",
+            f"  --sonic-console '{console}'",
+            "if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
+            "",
+        ]
+    ),
+    encoding="utf-8",
+    newline="\n",
+)
+PY
+    set +e
+    powershell.exe -NoProfile -File "$(wslpath -w "$output_root/driver/validate.ps1")" \
+      >"$current_log" 2>&1
+    validate_status=$?
+    set -e
+  else
+    set +e
+    "$repo/.venv/bin/python" -m showhand validate-replay \
+      --replay-timing "$output_root/replay_timing.json" \
+      --sim-meta "$output_root/sim/sim_meta.json" \
+      --telemetry "$output_root/sim/telemetry.csv" \
+      --sonic-console "$output_root/sonic_logs/console.log" \
+      >"$current_log" 2>&1
+    validate_status=$?
+    set -e
+  fi
+  if [ "$validate_status" -ne 0 ]; then
+    die "saved replay failed the frozen gates"
+  fi
+  echo "SHOWHAND_STAGE=validate_replay_done"
+else
 
 mkdir -p "$output_root/driver" "$output_root/logs" "$output_root/sim" "$output_root/gemx"
 printf '%s\n' "$probe_json" > "$output_root/driver/probe.json"
@@ -447,6 +569,8 @@ fi
 mkdir -p "$output_root/sonic_logs"
 cp -a "$sonic_native/." "$output_root/sonic_logs/"
 echo "SHOWHAND_STAGE=sonic_logs_copied"
+
+fi
 
 cat > "$output_root/driver/render.sh" <<EOF
 #!/usr/bin/env bash

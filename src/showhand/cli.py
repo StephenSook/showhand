@@ -47,6 +47,12 @@ def main() -> None:
     record_parser.add_argument("--input", required=True)
     record_parser.add_argument("--out", required=True)
 
+    validate_parser = sub.add_parser("validate-replay")
+    validate_parser.add_argument("--replay-timing", required=True)
+    validate_parser.add_argument("--sim-meta", required=True)
+    validate_parser.add_argument("--telemetry", required=True)
+    validate_parser.add_argument("--sonic-console", required=True)
+
     args = parser.parse_args()
     if args.command == "metrics":
         thresholds = load_thresholds(args.thresholds)
@@ -93,10 +99,60 @@ def main() -> None:
         _write_json(args.out, result)
     elif args.command == "write-record":
         write_take_record(args.out, _read_json(args.input))
+    elif args.command == "validate-replay":
+        timing = _read_json(args.replay_timing)
+        validate_saved_replay(
+            timing,
+            _read_json(args.sim_meta),
+            args.telemetry,
+            args.sonic_console,
+        )
+        print(
+            "replay gates passed "
+            f"run_id={timing['run_id']} "
+            f"frames={timing['output_frames']} "
+            f"jitter_max_s={float(timing['publish_jitter_max_s']):.6f}"
+        )
 
 
 def _read_json(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+FROZEN_MAX_PUBLISH_JITTER_S = 0.01
+FROZEN_MAX_TELEMETRY_GAP_S = 0.05
+
+
+def validate_saved_replay(
+    timing: dict,
+    sim_meta: dict,
+    telemetry_path: str | Path,
+    sonic_console_path: str | Path,
+) -> None:
+    """Re-check a finished replay without loosening the frozen gates."""
+    _validate_completion(timing, sim_meta, telemetry_path, sonic_console_path)
+    try:
+        allowed = float(timing["max_allowed_jitter_s"])
+        observed = float(timing["publish_jitter_max_s"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("replay timing is missing publish jitter") from error
+    if allowed <= 0 or allowed > FROZEN_MAX_PUBLISH_JITTER_S:
+        raise ValueError(
+            f"replay jitter limit {allowed:.6f}s is outside the frozen "
+            f"{FROZEN_MAX_PUBLISH_JITTER_S:.6f}s gate"
+        )
+    if observed > allowed:
+        raise ValueError(f"publish jitter {observed:.6f}s exceeds {allowed:.6f}s")
+    release = sim_meta.get("elastic_band_release_monotonic_ns")
+    if release is None:
+        raise ValueError("simulator metadata is missing support release time")
+    load_sim_telemetry(
+        telemetry_path,
+        int(timing["replay_start_monotonic_ns"]),
+        int(timing["simulator_last_telemetry_monotonic_ns"]),
+        int(release),
+        max_gap_s=FROZEN_MAX_TELEMETRY_GAP_S,
+    )
 
 
 def _validate_completion(

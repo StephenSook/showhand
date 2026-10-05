@@ -1,9 +1,10 @@
+import csv
 import hashlib
 from pathlib import Path
 
 import pytest
 
-from showhand.cli import _validate_completion
+from showhand.cli import _validate_completion, validate_saved_replay
 
 
 def _evidence(tmp_path: Path) -> tuple[dict, dict, Path, Path]:
@@ -178,3 +179,113 @@ def test_completion_rejects_nonzero_end_marker(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="successful run boundary"):
         _validate_completion(timing, metadata, telemetry, sonic_console)
+
+
+def _dense_replay(tmp_path: Path) -> tuple[dict, dict, Path, Path]:
+    telemetry = tmp_path / "telemetry.csv"
+    names = [
+        "monotonic_ns",
+        "sim_time_s",
+        "root_height_m",
+        "root_tilt_deg",
+        "left_foot_slip_m_s",
+        "right_foot_slip_m_s",
+        "out_of_balance",
+        "fall_event",
+        *[f"q_{index}" for index in range(29)],
+    ]
+    start_ns = 1_000_000_000
+    last_ns = 1_610_000_000
+    stamps = list(range(start_ns, last_ns + 1, 5_000_000))
+    with telemetry.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=names)
+        writer.writeheader()
+        for index, stamp in enumerate(stamps):
+            writer.writerow(
+                {
+                    "monotonic_ns": stamp,
+                    "sim_time_s": index * 0.005,
+                    "root_height_m": 0.8,
+                    "root_tilt_deg": 0.0,
+                    "left_foot_slip_m_s": 0.0,
+                    "right_foot_slip_m_s": 0.0,
+                    "out_of_balance": 0,
+                    "fall_event": 0,
+                    **{f"q_{joint}": 0.0 for joint in range(29)},
+                }
+            )
+    digest = hashlib.sha256(telemetry.read_bytes()).hexdigest()
+    sonic_console = tmp_path / "sonic.log"
+    sonic_console.write_text(
+        "SHOWHAND_RUN_BEGIN=test-run\n"
+        + "\n".join(
+            f"Protocol v3: Received SMPL action (single) - frame_index: {i}" for i in range(3)
+        )
+        + "\nSHOWHAND_RUN_END=test-run exit=0\n",
+        encoding="utf-8",
+    )
+    timing = {
+        "run_id": "test-run",
+        "replay_start_monotonic_ns": start_ns,
+        "replay_end_monotonic_ns": start_ns,
+        "completion_request_monotonic_ns": 1_010_000_000,
+        "completion_status": "completed",
+        "output_frames": 3,
+        "expected_final_frame_index": 2,
+        "simulator_telemetry_steps": len(stamps),
+        "simulator_last_telemetry_monotonic_ns": last_ns,
+        "simulator_telemetry_sha256": digest,
+        "simulator_telemetry_bytes": telemetry.stat().st_size,
+        "post_roll_s": 0.6,
+        "artifacts_flushed_monotonic_ns": last_ns + 10_000_000,
+        "max_allowed_jitter_s": 0.01,
+        "publish_jitter_max_s": 0.001,
+    }
+    metadata = {
+        "run_id": "test-run",
+        "completion_request_monotonic_ns": 1_010_000_000,
+        "completion_status": "completed",
+        "expected_final_frame_index": 2,
+        "expected_output_frames": 3,
+        "telemetry_steps": len(stamps),
+        "last_telemetry_monotonic_ns": last_ns,
+        "replay_end_monotonic_ns": start_ns,
+        "telemetry_sha256": digest,
+        "telemetry_bytes": telemetry.stat().st_size,
+        "post_roll_s": 0.6,
+        "elastic_band_release_monotonic_ns": start_ns - 1_000_000,
+    }
+    return timing, metadata, telemetry, sonic_console
+
+
+def test_saved_replay_accepts_a_trace_inside_the_frozen_gates(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _dense_replay(tmp_path)
+    validate_saved_replay(timing, metadata, telemetry, sonic_console)
+
+
+def test_saved_replay_rejects_a_loosened_jitter_limit(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _dense_replay(tmp_path)
+    timing["max_allowed_jitter_s"] = 0.02
+    with pytest.raises(ValueError, match="outside the frozen"):
+        validate_saved_replay(timing, metadata, telemetry, sonic_console)
+
+
+def test_saved_replay_rejects_a_telemetry_gap(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _dense_replay(tmp_path)
+    with telemetry.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+        fieldnames = list(rows[0].keys())
+    kept = [row for row in rows if not (1_200_000_000 <= int(row["monotonic_ns"]) < 1_260_000_000)]
+    with telemetry.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(kept)
+    digest = hashlib.sha256(telemetry.read_bytes()).hexdigest()
+    timing["simulator_telemetry_sha256"] = digest
+    timing["simulator_telemetry_bytes"] = telemetry.stat().st_size
+    timing["simulator_telemetry_steps"] = len(kept)
+    metadata["telemetry_sha256"] = digest
+    metadata["telemetry_bytes"] = telemetry.stat().st_size
+    metadata["telemetry_steps"] = len(kept)
+    with pytest.raises(ValueError, match="telemetry gap"):
+        validate_saved_replay(timing, metadata, telemetry, sonic_console)
