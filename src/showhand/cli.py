@@ -50,6 +50,13 @@ def main() -> None:
         sim_meta = _read_json(args.sim_meta)
         replay_start_ns = int(timing["replay_start_monotonic_ns"])
         replay_end_ns = int(timing["replay_end_monotonic_ns"])
+        finish_ns = int(timing["simulator_finish_monotonic_ns"])
+        if finish_ns < replay_end_ns:
+            raise ValueError("simulator finish acknowledgement predates replay completion")
+        if int(sim_meta["replay_finish_request_monotonic_ns"]) != finish_ns:
+            raise ValueError("simulator finish provenance differs between timing and metadata")
+        if not sim_meta["self_terminated_after_finish_request"]:
+            raise ValueError("simulator did not self-terminate after the replay finish request")
         target = load_retargeted_motion(args.retarget_csv, args.source_fps)
         telemetry = load_sim_telemetry(
             args.telemetry,

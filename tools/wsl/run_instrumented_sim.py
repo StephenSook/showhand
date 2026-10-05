@@ -154,21 +154,21 @@ def main() -> None:
         "previous_left": None,
         "previous_right": None,
         "elastic_release_ns": None,
+        "finish_request_ns": None,
         "was_below_fall_height": False,
     }
 
     def record_then_check_fall() -> None:
         stamp = time.monotonic_ns()
-        if state["elastic_release_ns"] is None:
-            try:
-                connection, _ = handshake.accept()
-            except BlockingIOError:
-                connection = None
-            if connection is not None:
-                with connection:
-                    request = connection.recv(64)
-                    if request != b"release\n":
-                        raise RuntimeError(f"invalid simulator handshake request: {request!r}")
+        stop_after_sample = False
+        try:
+            connection, _ = handshake.accept()
+        except BlockingIOError:
+            connection = None
+        if connection is not None:
+            with connection:
+                request = connection.recv(64)
+                if request == b"release\n" and state["elastic_release_ns"] is None:
                     env.elastic_band.enable = False
                     state["elastic_release_ns"] = stamp
                     acknowledgement = {
@@ -178,6 +178,18 @@ def main() -> None:
                     }
                     connection.sendall((json.dumps(acknowledgement) + "\n").encode())
                     print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={stamp}")
+                elif request == b"finish\n" and state["elastic_release_ns"] is not None:
+                    state["finish_request_ns"] = stamp
+                    acknowledgement = {
+                        "finish_monotonic_ns": stamp,
+                        "finish_step_index": state["step"],
+                        "finish_sim_time_s": float(data.time),
+                    }
+                    connection.sendall((json.dumps(acknowledgement) + "\n").encode())
+                    stop_after_sample = True
+                    print(f"SHOWHAND_REPLAY=finished monotonic_ns={stamp}")
+                else:
+                    raise RuntimeError(f"invalid simulator handshake request: {request!r}")
         root = data.qpos[:7].copy()
         joints = data.qpos[env.body_joint_index + env.qpos_offset - 1].copy()
         com = data.subtree_com[env.root_body_id].copy()
@@ -246,6 +258,8 @@ def main() -> None:
         )
         state["was_below_fall_height"] = below_fall_height
         old_check_fall()
+        if stop_after_sample:
+            simulator._running = False
 
     env.check_fall = record_then_check_fall
     print("SHOWHAND_SIM_INSTRUMENTATION=active")
@@ -266,6 +280,8 @@ def main() -> None:
             "offscreen_render_during_control": False,
             "elastic_band_startup_enabled": True,
             "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
+            "replay_finish_request_monotonic_ns": state["finish_request_ns"],
+            "self_terminated_after_finish_request": state["finish_request_ns"] is not None,
             "fall_condition": "transition into root_height_m < 0.2 before stock reset",
             "foot_slip_definition": (
                 "horizontal contact-foot displacement divided by measured simulator time; "

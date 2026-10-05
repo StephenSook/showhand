@@ -75,12 +75,7 @@ def main() -> None:
         f"CONVERSION_WALL_S={conversion_wall_s:.6f}",
         flush=True,
     )
-    handshake = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    handshake.settimeout(args.handshake_timeout_s)
-    handshake.connect(args.handshake_socket)
-    handshake.sendall(b"release\n")
-    acknowledgement = json.loads(handshake.makefile("r", encoding="utf-8").readline())
-    handshake.close()
+    acknowledgement = _handshake(args.handshake_socket, b"release\n", args.handshake_timeout_s)
     release_ns = int(acknowledgement["release_monotonic_ns"])
 
     saved: dict[str, list[np.ndarray]] = {
@@ -121,6 +116,9 @@ def main() -> None:
     finally:
         end_ns = time.monotonic_ns()
         publisher.close()
+        finish_acknowledgement = _handshake(
+            args.handshake_socket, b"finish\n", args.handshake_timeout_s
+        )
 
     smpl_output = Path(args.smpl_output)
     smpl_output.parent.mkdir(parents=True, exist_ok=True)
@@ -145,6 +143,8 @@ def main() -> None:
         "resampling": "zero_order_hold_by_source_timestamp",
         "replay_start_monotonic_ns": start_ns,
         "replay_end_monotonic_ns": end_ns,
+        "simulator_finish_monotonic_ns": int(finish_acknowledgement["finish_monotonic_ns"]),
+        "simulator_finish_step_index": int(finish_acknowledgement["finish_step_index"]),
         "wall_duration_s": (end_ns - start_ns) / 1_000_000_000,
         "publish_jitter_max_s": max(publish_jitter_s, default=0.0),
         "publish_jitter_p95_s": float(np.percentile(publish_jitter_s, 95)),
@@ -155,6 +155,21 @@ def main() -> None:
     timing_output.parent.mkdir(parents=True, exist_ok=True)
     timing_output.write_text(json.dumps(timing, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(timing, sort_keys=True))
+
+
+def _handshake(socket_path: str, request: bytes, timeout_s: float) -> dict:
+    connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    connection.settimeout(timeout_s)
+    try:
+        connection.connect(socket_path)
+        connection.sendall(request)
+        with connection.makefile("r", encoding="utf-8") as response:
+            line = response.readline()
+        if not line:
+            raise RuntimeError(f"simulator returned no acknowledgement for {request!r}")
+        return json.loads(line)
+    finally:
+        connection.close()
 
 
 if __name__ == "__main__":
