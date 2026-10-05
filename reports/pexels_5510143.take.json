@@ -3,6 +3,7 @@
   "take_id": "pexels_5510143",
   "label": "PLUMBING TEST",
   "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
+  "threshold_path": "config/thresholds.yaml",
   "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
   "code_commit_sha": "7e6c3b2a75dc0f8639842508219ff27c0da8fae7",
   "source": {
