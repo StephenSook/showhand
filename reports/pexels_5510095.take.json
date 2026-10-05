@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "take_id": "pexels_5510095",
+  "label": "PLUMBING TEST",
+  "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
+  "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
+  "code_commit_sha": "7e6c3b2a75dc0f8639842508219ff27c0da8fae7",
+  "source": {
+    "path": "clips/pexels_5510095.mp4",
+    "original_wsl_path": "/home/stephensookra/showhand/clips/pexels_5510095.mp4",
+    "sha256": "303ac63a86cd672e5bc07639571bd13e3d0b977115c3abf9c03c8cfa3a12f055",
+    "license": "Pexels license",
+    "frames": 222,
+    "fps": 25.0,
+    "pose_duration_s": 8.84,
+    "container_duration_s": 8.895
+  },
+  "artifacts": {
+    "gem_x_soma_sequence": "artifacts/gemx/pexels_5510095/hpe_results.pt",
+    "gem_x_in_camera_render": "artifacts/gemx/pexels_5510095/pexels_5510095_1_incam.mp4",
+    "gem_x_global_render": "artifacts/gemx/pexels_5510095/pexels_5510095_2_global.mp4",
+    "newton_g1_reference_csv": "artifacts/gemx/pexels_5510095/g1_retarget.csv",
+    "newton_g1_reference_bvh": "artifacts/gemx/pexels_5510095/g1_retarget.bvh",
+    "sonic_input_sequence": "artifacts/runs/pexels_5510095/smpl_sequence.npz",
+    "sonic_csv_logs": "artifacts/runs/pexels_5510095/sonic_logs",
+    "sim_step_telemetry": "artifacts/runs/pexels_5510095/sim/telemetry.csv",
+    "sim_metadata": "artifacts/runs/pexels_5510095/sim/sim_meta.json",
+    "replay_timing": "artifacts/runs/pexels_5510095/replay_timing.json",
+    "sim_render": "artifacts/runs/pexels_5510095/sim/sonic_g1.mp4",
+    "render_timestamps": "artifacts/runs/pexels_5510095/sim/render_timestamps.csv",
+    "render_metadata": "artifacts/runs/pexels_5510095/sim/render_meta.json",
+    "metrics": "artifacts/runs/pexels_5510095/metrics.json",
+    "visual_pairs": "artifacts/runs/pexels_5510095/visual",
+    "visual_manifest": "artifacts/runs/pexels_5510095/visual/manifest.json",
+    "visual_output": null,
+    "fusion_output": null
+  },
+  "timings_s": {
+    "gem_x_pose_and_failed_retarget": 290.748189425,
+    "saved_result_newton_retarget": 232.594338559,
+    "gem_x_and_retarget_total": 523.342527984,
+    "soma_to_smpl_precompute": 8.659366464,
+    "sonic_replay_50_hz": 8.860058737,
+    "offline_sim_render": 98.013354433,
+    "visual_pair_extraction": 2.6650024,
+    "deterministic_metrics": 1.8742819,
+    "cosmos_job": 0.0,
+    "nemotron_fusion": 0.0
+  },
+  "metrics": {
+    "retargeter": "NVIDIA SOMA Retargeter NewtonPipeline(skeleton, soma, unitree_g1)",
+    "tracking_mean_abs_error_rad": 0.344326,
+    "tracking_p95_abs_error_rad": 1.564705,
+    "root_height_min_m": 0.197887,
+    "root_tilt_max_deg": 107.650372,
+    "foot_slip_max_m_s": 4.686989,
+    "foot_slip_seconds": 1.712156,
+    "out_of_balance_seconds": 3.429961,
+    "falls": 1,
+    "pass": false,
+    "reason_codes": [
+      "tracking_p95_abs_error_rad",
+      "root_height_m",
+      "root_tilt_deg",
+      "foot_slip",
+      "out_of_balance",
+      "fall"
+    ]
+  },
+  "visual_judge": {
+    "status": "blocked_before_job_create",
+    "model_id": "nvidia/Cosmos-Reason1-7B",
+    "precision": "bfloat16",
+    "job": {},
+    "verdicts": [],
+    "error": "Nebius CLI OAuth token expired at 2026-10-05T15:26:01Z and requested browser authentication"
+  },
+  "fusion": {
+    "status": "not_run_missing_visual_verdicts",
+    "model_id": "nvidia/Nemotron-3_5-Lightning",
+    "output": null,
+    "error": "Fusion requires validated Cosmos verdicts; no substitute output was created"
+  },
+  "cost_usd": {
+    "nebius_gpu": 0.0,
+    "token_factory": 0.0,
+    "total": 0.0
+  },
+  "cleanup": {
+    "nebius_jobs_started": 0,
+    "nebius_endpoints_started": 0,
+    "sonic_process_final_state": "stopped_exit_0",
+    "sim_process_final_state": "stopped_exit_0",
+    "gpu_hours_used": 0.0
+  },
+  "errors": [
+    "ModuleNotFoundError: No module named 'sam_3d_body'",
+    "ValueError: could not convert string to float: 'size'",
+    "Nebius injected archive was 290162 bytes and exceeded the 65536 byte limit",
+    "Nebius CLI requested browser authentication before job creation"
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "take_id": "pexels_5510143",
+  "label": "PLUMBING TEST",
+  "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
+  "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
+  "code_commit_sha": "7e6c3b2a75dc0f8639842508219ff27c0da8fae7",
+  "source": {
+    "path": "clips/pexels_5510143.mp4",
+    "original_wsl_path": "/home/stephensookra/showhand/clips/pexels_5510143.mp4",
+    "sha256": "44a7933b1e6a31254d27fbe7dc6cf08410dbe42e3766dfe8ac9621c7d2a4fe4b",
+    "license": "Pexels license",
+    "frames": 441,
+    "fps": 25.0,
+    "pose_duration_s": 17.6,
+    "container_duration_s": 17.641667
+  },
+  "artifacts": {
+    "gem_x_soma_sequence": "artifacts/gemx/pexels_5510143/hpe_results.pt",
+    "gem_x_in_camera_render": "artifacts/gemx/pexels_5510143/pexels_5510143_1_incam.mp4",
+    "gem_x_global_render": "artifacts/gemx/pexels_5510143/pexels_5510143_2_global.mp4",
+    "gem_x_comparison_render": "artifacts/gemx/pexels_5510143/pexels_5510143_3_incam_global_horiz.mp4",
+    "newton_g1_preview": "artifacts/gemx/pexels_5510143/pexels_5510143_4_g1_retarget.mp4",
+    "newton_g1_reference_csv": "artifacts/gemx/pexels_5510143/pexels_5510143_retarget_g1.csv",
+    "sonic_input_sequence": "artifacts/runs/pexels_5510143/smpl_sequence.npz",
+    "sonic_csv_logs": "artifacts/runs/pexels_5510143/sonic_logs",
+    "sim_step_telemetry": "artifacts/runs/pexels_5510143/sim/telemetry.csv",
+    "sim_metadata": "artifacts/runs/pexels_5510143/sim/sim_meta.json",
+    "replay_timing": "artifacts/runs/pexels_5510143/replay_timing.json",
+    "sim_render": "artifacts/runs/pexels_5510143/sim/render.mp4",
+    "render_timestamps": "artifacts/runs/pexels_5510143/sim/render_timestamps.json",
+    "render_metadata": "artifacts/runs/pexels_5510143/sim/render_meta.json",
+    "metrics": "artifacts/runs/pexels_5510143/metrics.json",
+    "visual_pairs": "artifacts/runs/pexels_5510143/visual",
+    "visual_manifest": "artifacts/runs/pexels_5510143/visual/manifest.json",
+    "visual_output": null,
+    "fusion_output": null
+  },
+  "timings_s": {
+    "gem_x_and_newton_retarget": 722.984161058,
+    "soma_to_smpl_precompute": 11.911243572,
+    "sonic_replay_50_hz": 17.620096728,
+    "offline_sim_render": 169.235276529,
+    "visual_pair_extraction": 4.3807729,
+    "deterministic_metrics": 1.0783812,
+    "cosmos_job": 0.0,
+    "nemotron_fusion": 0.0
+  },
+  "metrics": {
+    "retargeter": "NVIDIA SOMA Retargeter NewtonPipeline(skeleton, soma, unitree_g1)",
+    "tracking_mean_abs_error_rad": 0.242619,
+    "tracking_p95_abs_error_rad": 0.725943,
+    "root_height_min_m": 0.698109,
+    "root_tilt_max_deg": 28.132014,
+    "foot_slip_max_m_s": 5.926035,
+    "foot_slip_seconds": 0.873118,
+    "out_of_balance_seconds": 1.688906,
+    "falls": 0,
+    "pass": false,
+    "reason_codes": [
+      "foot_slip",
+      "out_of_balance"
+    ]
+  },
+  "visual_judge": {
+    "status": "blocked_before_job_create",
+    "model_id": "nvidia/Cosmos-Reason1-7B",
+    "precision": "bfloat16",
+    "job": {},
+    "verdicts": [],
+    "error": "Nebius CLI OAuth token expired at 2026-10-05T15:26:01Z and requested browser authentication"
+  },
+  "fusion": {
+    "status": "not_run_missing_visual_verdicts",
+    "model_id": "nvidia/Nemotron-3_5-Lightning",
+    "output": null,
+    "error": "Fusion requires validated Cosmos verdicts; no substitute output was created"
+  },
+  "cost_usd": {
+    "nebius_gpu": 0.0,
+    "token_factory": 0.0,
+    "total": 0.0
+  },
+  "cleanup": {
+    "nebius_jobs_started": 0,
+    "nebius_endpoints_started": 0,
+    "sonic_process_final_state": "stopped_exit_0",
+    "sim_process_final_state": "stopped_exit_0",
+    "gpu_hours_used": 0.0
+  },
+  "errors": [
+    "Linux Killed the first GEM-X attempt under the image-feature path",
+    "Nebius CLI requested browser authentication before job creation"
+  ]
+}
