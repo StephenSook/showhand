@@ -117,7 +117,7 @@ def test_completion_rejects_stale_sonic_run_id(tmp_path: Path) -> None:
         _validate_completion(timing, metadata, telemetry, sonic_console)
 
 
-def test_completion_ignores_receipts_outside_run_boundaries(tmp_path: Path) -> None:
+def test_completion_rejects_only_receipts_outside_run_boundaries(tmp_path: Path) -> None:
     timing, metadata, telemetry, sonic_console = _evidence(tmp_path)
     stale_receipts = "\n".join(
         f"[ZMQEndpointInterface] Protocol v3: Received SMPL action (single) - frame_index: {i}"
@@ -126,10 +126,24 @@ def test_completion_ignores_receipts_outside_run_boundaries(tmp_path: Path) -> N
     sonic_console.write_text(
         stale_receipts
         + "\nSHOWHAND_RUN_BEGIN=test-run\n"
-        + stale_receipts
-        + "\nSHOWHAND_RUN_END=test-run exit=0\n"
-        + stale_receipts
-        + "\n",
+        + "controller active\nSHOWHAND_RUN_END=test-run exit=0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="receipt is incomplete"):
+        _validate_completion(timing, metadata, telemetry, sonic_console)
+
+
+def test_completion_ignores_conflicting_receipts_outside_run_boundaries(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _evidence(tmp_path)
+    valid_receipts = "\n".join(
+        f"Protocol v3: Received SMPL action (single) - frame_index: {i}" for i in range(3)
+    )
+    sonic_console.write_text(
+        "Protocol v3: Received SMPL action (single) - frame_index: 99\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 2\n"
+        "SHOWHAND_RUN_BEGIN=test-run\n" + valid_receipts + "\nSHOWHAND_RUN_END=test-run exit=0\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 0\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 100\n",
         encoding="utf-8",
     )
     _validate_completion(timing, metadata, telemetry, sonic_console)

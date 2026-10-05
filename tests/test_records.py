@@ -206,8 +206,65 @@ def test_take_record_rejects_metric_artifact_mismatch(tmp_path: Path) -> None:
         write_take_record(tmp_path / "record.json", record)
 
 
+def test_take_record_rejects_mirrored_but_wrong_metric_verdict(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    metrics_path = Path(record["artifacts"]["metrics"])
+    artifact_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    artifact_metrics["overall"]["tracking_mean_abs_error_rad"] = 9.0
+    metrics_path.write_text(json.dumps(artifact_metrics) + "\n", encoding="utf-8")
+    record["metrics"]["tracking_mean_abs_error_rad"] = 9.0
+    with pytest.raises(ValueError, match="reason codes disagree with frozen thresholds"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_validate_take_record_rejects_direct_run_id_mismatch(tmp_path: Path) -> None:
+    output = tmp_path / "record.json"
+    write_take_record(output, _record(tmp_path))
+    record = json.loads(output.read_text(encoding="utf-8"))
+    record["replay_validation"]["run_id"] = "other-run"
+    with pytest.raises(ValueError, match="run_id differs from replay timing"):
+        validate_take_record(record)
+
+
 def test_take_record_rejects_uncommitted_threshold_claim(tmp_path: Path) -> None:
     record = _record(tmp_path)
     record["threshold_commit_sha"] = "0" * 40
     with pytest.raises(ValueError, match="threshold_commit_sha does not name a commit"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_take_record_rejects_threshold_commit_after_replay_commit(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    replay_timing_path = Path(record["artifacts"]["replay_timing"])
+    replay_timing = json.loads(replay_timing_path.read_text(encoding="utf-8"))
+    replay_commit = subprocess.check_output(["git", "rev-parse", "HEAD^"], text=True).strip()
+    replay_timing["code_commit_sha"] = replay_commit
+    replay_timing_path.write_text(json.dumps(replay_timing) + "\n", encoding="utf-8")
+    record["code_commit_sha"] = replay_commit
+    record["threshold_commit_sha"] = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True
+    ).strip()
+    record["replay_validation"]["replay_timing_sha256"] = hashlib.sha256(
+        replay_timing_path.read_bytes()
+    ).hexdigest()
+    with pytest.raises(ValueError, match="not an ancestor"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_take_record_rejects_wrong_threshold_blob_at_replay_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    record = _record(tmp_path)
+    code_commit_sha = record["code_commit_sha"]
+    original_run = subprocess.run
+
+    def fake_run(
+        args: list[str], *positional: object, **keywords: object
+    ) -> subprocess.CompletedProcess:
+        if args[:2] == ["git", "show"] and args[2].startswith(f"{code_commit_sha}:"):
+            return subprocess.CompletedProcess(args, 0, stdout=b"different threshold bytes\n")
+        return original_run(args, *positional, **keywords)
+
+    monkeypatch.setattr("showhand.records.subprocess.run", fake_run)
+    with pytest.raises(ValueError, match="replay code commit contains different threshold bytes"):
         write_take_record(tmp_path / "record.json", record)

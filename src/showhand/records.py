@@ -11,6 +11,9 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from showhand.metrics import metric_reason_codes
+from showhand.thresholds import load_thresholds
+
 REQUIRED_FILE_ARTIFACTS = (
     "sim_step_telemetry",
     "sim_metadata",
@@ -224,6 +227,26 @@ def _validate_artifact_semantics(record: dict[str, Any], replay_timing: dict[str
         raise ValueError("threshold_path does not exist at threshold_commit_sha")
     if hashlib.sha256(committed.stdout).hexdigest() != record["threshold_sha256"]:
         raise ValueError("threshold commit bytes differ from threshold_sha256")
+    ancestry = subprocess.run(
+        [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            threshold_commit_sha,
+            record["code_commit_sha"],
+        ],
+        capture_output=True,
+    )
+    if ancestry.returncode != 0:
+        raise ValueError("threshold commit is not an ancestor of the replay code commit")
+    replay_commit_threshold = subprocess.run(
+        ["git", "show", f"{record['code_commit_sha']}:{threshold_path.as_posix()}"],
+        capture_output=True,
+    )
+    if replay_commit_threshold.returncode != 0:
+        raise ValueError("threshold_path does not exist at replay code commit")
+    if hashlib.sha256(replay_commit_threshold.stdout).hexdigest() != record["threshold_sha256"]:
+        raise ValueError("replay code commit contains different threshold bytes")
 
     overall = artifact_metrics.get("overall")
     if not isinstance(overall, dict):
@@ -247,6 +270,12 @@ def _validate_artifact_semantics(record: dict[str, Any], replay_timing: dict[str
         raise ValueError("take record retargeter differs from metrics artifact")
     if artifact_metrics.get("threshold_sha256") != record["threshold_sha256"]:
         raise ValueError("metrics artifact threshold differs from take record")
+    thresholds = load_thresholds(threshold_path)
+    derived_reasons = metric_reason_codes(overall, thresholds)
+    if overall["reason_codes"] != derived_reasons:
+        raise ValueError("metrics artifact reason codes disagree with frozen thresholds")
+    if overall["pass"] is not (not derived_reasons):
+        raise ValueError("metrics artifact pass verdict disagrees with frozen thresholds")
 
     replay_validation = record["replay_validation"]
     replay_fields = {
