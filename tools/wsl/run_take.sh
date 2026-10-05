@@ -27,6 +27,10 @@ repo=$(cd "$(dirname "$0")/../.." && pwd)
 # Resolve now, against the caller's directory: later stages cd into GEM-X and SONIC, and a relative
 # OUTPUT_ROOT would silently land inside those trees (take 0526 on 2026-10-05 did exactly that).
 output_root=$(realpath -m "$output_root")
+# Every Python stage writes its readiness markers to a log file that the driver polls. Redirected
+# stdout is block-buffered, so without this the simulator's SHOWHAND_SIM_INSTRUMENTATION marker never
+# reached sim.log and takes 0526 and 0527 failed on 2026-10-05 after a correct start.
+export PYTHONUNBUFFERED=1
 gemx_root=/home/stephensookra/showhand/GEM-X
 sonic_root=/home/stephensookra/showhand/GR00T-WholeBodyControl
 frozen_threshold_commit=0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9
