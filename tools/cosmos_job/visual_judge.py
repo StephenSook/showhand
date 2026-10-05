@@ -64,7 +64,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--max-new-tokens", default=512, type=int)
+    parser.add_argument("--max-new-tokens", default=4096, type=int)
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest)
@@ -77,7 +77,7 @@ def main() -> None:
     processor = AutoProcessor.from_pretrained(MODEL_ID)
     model = AutoModelForMultimodalLM.from_pretrained(
         MODEL_ID,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         device_map="auto",
         low_cpu_mem_usage=True,
     )
@@ -148,7 +148,7 @@ def main() -> None:
     output = {
         "schema_version": 1,
         "model_id": MODEL_ID,
-        "precision": "float16",
+        "precision": "bfloat16",
         "decoding": {"do_sample": False, "max_new_tokens": args.max_new_tokens},
         "fixed_question": FIXED_QUESTION,
         "model_load_s": load_s,
