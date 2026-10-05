@@ -55,7 +55,7 @@ Run GEM-X offline:
 bash tools/wsl/run_gemx_offline.sh CLIP OUTPUT_ROOT
 ```
 
-Start `tools/wsl/run_instrumented_sim.py` in the stock simulation environment, start `tools/wsl/run_sonic.sh`, select ZMQ mode, and prepare `tools/wsl/replay_soma_v3.py`. Create the simulator release marker and start the replay at the same barrier. The replay precomputes every SOMA-to-SMPL conversion before it starts the 50 Hz clock. Rendering is a separate pass so image generation cannot slow control:
+Start `tools/wsl/run_instrumented_sim.py` in the stock simulation environment, start `tools/wsl/run_sonic.sh`, select ZMQ mode, and run `tools/wsl/replay_soma_v3.py`. The replay requests support release through a Unix socket and starts its 50 Hz clock only after the simulator acknowledges the release. After the last frame, it sends a finish request so the simulator exits its own loop and flushes telemetry plus metadata. The replay precomputes every SOMA-to-SMPL conversion before it starts the clock. Rendering is a separate pass so image generation cannot slow control:
 
 ```bash
 python tools/wsl/render_sim_telemetry.py \
@@ -73,8 +73,8 @@ Compute the deterministic grade:
   --retarget-csv RETARGET.csv `
   --source-fps 25 `
   --telemetry TELEMETRY.csv `
-  --replay-start-ns START_NS `
-  --replay-end-ns END_NS `
+  --replay-timing REPLAY_TIMING.json `
+  --sim-meta SIM_META.json `
   --thresholds config\thresholds.yaml `
   --out METRICS.json
 ```
@@ -83,7 +83,7 @@ Build paired frames, submit the visual job, fetch its raw structured results, an
 
 ```bash
 bash tools/cosmos_job/submit.sh TAKE_ID PAIRS_DIR
-bash tools/cosmos_job/fetch.sh JOB_ID TAKE_ID OUTPUT_JSON
+bash tools/cosmos_job/fetch.sh JOB_ID TAKE_ID PAIRS_DIR/manifest.json OUTPUT_JSON
 ```
 
 ```powershell
@@ -102,26 +102,27 @@ These outputs come from Pexels stock clips. They are not product evidence.
 | Source frames at 25 fps | 222 | 441 |
 | Target motion duration | 8.84 s | 17.60 s |
 | GEM-X and retarget wall time | 523.342528 s across recovery steps | 722.984161 s |
-| SOMA conversion before replay | 8.659366 s | 11.911244 s |
-| 50 Hz replay wall time | 8.860059 s | 17.620097 s |
-| Offline render wall time | 98.013354 s | 169.235277 s |
-| Paired-frame extraction wall time | 2.665002 s | 4.380773 s |
-| Metrics wall time | 1.874282 s | 1.078381 s |
-| Tracking mean absolute error | 0.344326 rad | 0.242619 rad |
-| Tracking p95 absolute error | 1.564705 rad | 0.725943 rad |
-| Minimum root height | 0.197887 m | 0.698109 m |
-| Maximum root tilt | 107.650372 degrees | 28.132014 degrees |
-| Maximum contact-foot slip | 4.686989 m/s | 5.926035 m/s |
-| Contact-foot slip time | 1.712156 s | 0.873118 s |
-| Time out of balance | 3.429961 s | 1.688906 s |
-| Falls | 1 | 0 |
+| SOMA conversion before replay | 7.293487 s | 11.865080 s |
+| 50 Hz replay wall time | 8.840254 s | 17.600160 s |
+| Maximum 50 Hz publish jitter | 0.000545 s | 0.000319 s |
+| Offline render wall time, end to end | 120.648094 s | 206.990301 s |
+| Paired-frame extraction wall time | 2.626478 s | 4.081935 s |
+| Metrics wall time | 2.052768 s | 1.103975 s |
+| Tracking mean absolute error | 0.309580 rad | 0.245693 rad |
+| Tracking p95 absolute error | 0.792094 rad | 0.695628 rad |
+| Minimum root height | 0.195856 m | 0.197225 m |
+| Maximum root tilt | 96.632382 degrees | 71.835519 degrees |
+| Maximum contact-foot slip | 3.479745 m/s | 3.182455 m/s |
+| Contact-foot slip time | 3.016184 s | 0.501030 s |
+| Time out of balance | 4.184816 s | 0.873192 s |
+| Falls | 1 | 1 |
 | Deterministic threshold result | fail | fail |
 
-The short clip failed tracking p95, root height, root tilt, foot slip, time out of balance, and fall cutoffs. The long clip failed foot slip and time out of balance cutoffs.
+Both clips failed the root height, root tilt, foot slip, time out of balance, and fall cutoffs. The first second contains the fall in each run. The short clip also failed several per-second tracking cutoffs, but its whole-take tracking mean and p95 stayed within the configured limits. All metrics above come from replay intervals that began after the simulator acknowledged support release and ended before the simulator acknowledged completion.
 
 The first long GEM-X attempt was killed under the undocumented image-feature path. The first short attempt stopped after 86.663354 seconds with `ModuleNotFoundError: No module named 'sam_3d_body'`. The documented `--no-imgfeat` short run then produced pose files but failed at retargeting after 290.748189 seconds because the vendor BVH and USD files were Git LFS pointer text. The exact conversion error was `ValueError: could not convert string to float: 'size'`. Fetching those two LFS objects over HTTPS and running the saved-result retarget helper for 232.594339 seconds completed the stage. These failed attempts are plumbing history, not additional takes.
 
-The visual verdicts, fusion outputs, and GPU costs are not reported here until a real Serverless Job reaches a terminal state and the returned bytes pass validation. The current Nebius CLI credential expired at `2026-10-05T15:26:01Z`; the first authenticated create attempt therefore stopped before a job was created. No model output was substituted.
+The visual verdicts, fusion outputs, and GPU costs are not reported here until a real Serverless Job reaches a terminal state and the returned bytes pass validation. The prior Nebius CLI credential expired at `2026-10-05T15:26:01Z`; that create attempt stopped before a job was created. A fresh browser confirmation is pending. No model output has been substituted.
 
 ## Residual evaluation
 
