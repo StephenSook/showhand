@@ -127,7 +127,7 @@ def main() -> None:
                     "error_type": type(error).__name__,
                     "published_frames": len(publish_monotonic_ns),
                 },
-                args.handshake_timeout_s,
+                args.completion_timeout_s,
             )
         except Exception as cleanup_error:
             error.add_note(f"simulator abort also failed: {cleanup_error}")

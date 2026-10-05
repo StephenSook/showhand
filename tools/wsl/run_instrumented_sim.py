@@ -355,6 +355,8 @@ def main() -> None:
             }
             try:
                 completion_connection.sendall((json.dumps(acknowledgement) + "\n").encode())
+            except BrokenPipeError as error:
+                print(f"SHOWHAND_ACK_DELIVERY=failed error={type(error).__name__}: {error}")
             finally:
                 completion_connection.close()
         print(f"SHOWHAND_ARTIFACTS_FLUSHED={artifacts_flushed_ns}")
