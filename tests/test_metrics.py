@@ -94,22 +94,33 @@ def test_metrics_grade_post_roll_against_final_target_pose(tmp_path: Path) -> No
     late = dict(telemetry[-1])
     late.update(
         {
-            "monotonic_ns": 2_500_000_000,
+            "monotonic_ns": 2_250_000_000,
             "root_height_m": 0.0,
+            "left_foot_slip_m_s": 0.2,
+            "out_of_balance": 1.0,
             "fall_event": 1.0,
             **{f"q_{joint}": 2.0 for joint in range(29)},
         }
     )
     telemetry.append(late)
+    final_late = dict(late)
+    final_late["monotonic_ns"] = 2_500_000_000
+    final_late["fall_event"] = 0.0
+    telemetry.append(final_late)
 
     result = compute_take_metrics(
         target, telemetry, 1_000_000_000, load_thresholds("config/thresholds.yaml")
     )
 
-    assert result["telemetry_samples"] == 4
+    assert result["telemetry_samples"] == 5
     assert result["post_roll_evaluated_s"] == 0.5
     assert result["overall"]["pass"] is False
     assert "fall" in result["overall"]["reason_codes"]
+    assert result["overall"]["foot_slip_seconds"] == 0.25
+    assert result["overall"]["out_of_balance_seconds"] == 0.25
+    assert result["per_second"][-1]["foot_slip_seconds"] == 0.25
+    assert result["per_second"][-1]["out_of_balance_seconds"] == 0.25
+    assert result["per_second"][-1]["tracking_mean_abs_error_rad"] > 0.0
 
 
 def test_metrics_refuse_support_release_after_replay_start(tmp_path: Path) -> None:

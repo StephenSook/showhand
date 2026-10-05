@@ -106,6 +106,9 @@ def _validate_completion(
     completion_request_ns = int(timing["completion_request_monotonic_ns"])
     if timing["completion_status"] != "completed" or sim_meta["completion_status"] != "completed":
         raise ValueError("simulator completion status is not completed")
+    run_id = timing.get("run_id")
+    if not isinstance(run_id, str) or not run_id or sim_meta.get("run_id") != run_id:
+        raise ValueError("simulator run_id differs from replay timing")
     if completion_request_ns != int(sim_meta["completion_request_monotonic_ns"]):
         raise ValueError("simulator completion request provenance differs")
     if completion_request_ns < replay_end_ns:
@@ -131,13 +134,19 @@ def _validate_completion(
         raise ValueError("telemetry byte count differs from replay acknowledgement")
     if telemetry_bytes != int(sim_meta["telemetry_bytes"]):
         raise ValueError("telemetry byte count differs from simulator metadata")
+    telemetry_rows = 0
+    final_telemetry_ns = None
     with telemetry_path.open(newline="", encoding="utf-8") as handle:
-        telemetry_rows = sum(1 for _ in csv.DictReader(handle))
+        for row in csv.DictReader(handle):
+            telemetry_rows += 1
+            final_telemetry_ns = int(row["monotonic_ns"])
     if telemetry_rows != int(sim_meta["telemetry_steps"]):
         raise ValueError("telemetry row count differs from simulator metadata")
     last_telemetry_ns = int(timing["simulator_last_telemetry_monotonic_ns"])
     if last_telemetry_ns != int(sim_meta["last_telemetry_monotonic_ns"]):
         raise ValueError("simulator final telemetry timestamp differs from metadata")
+    if final_telemetry_ns != last_telemetry_ns:
+        raise ValueError("telemetry final row timestamp differs from completion evidence")
     post_roll_s = float(timing["post_roll_s"])
     if post_roll_s != float(sim_meta["post_roll_s"]):
         raise ValueError("simulator post-roll differs from replay timing")
@@ -151,11 +160,15 @@ def _validate_completion(
     _validate_controller_receipt(
         sonic_console_path,
         output_frames=int(timing["output_frames"]),
+        run_id=run_id,
     )
 
 
-def _validate_controller_receipt(path: str | Path, *, output_frames: int) -> None:
+def _validate_controller_receipt(path: str | Path, *, output_frames: int, run_id: str) -> None:
     text = Path(path).read_text(encoding="utf-8", errors="replace")
+    logged_run_ids = re.findall(r"^SHOWHAND_RUN_ID=(\S+)$", text, flags=re.MULTILINE)
+    if logged_run_ids != [run_id]:
+        raise ValueError("SONIC log run_id differs from replay timing")
     received = [
         int(match)
         for match in re.findall(

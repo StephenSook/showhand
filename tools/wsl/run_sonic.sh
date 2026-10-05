@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "usage: run_sonic.sh LOG_DIRECTORY" >&2
+if [ "$#" -ne 2 ]; then
+  echo "usage: run_sonic.sh LOG_DIRECTORY RUN_ID" >&2
   exit 2
 fi
 
 deploy_root="/home/stephensookra/showhand/GR00T-WholeBodyControl/gear_sonic_deploy"
 log_dir="$1"
+run_id="$2"
 mkdir -p "$log_dir"
 source /home/stephensookra/showhand/env.sh
 cd "$deploy_root"
 
 echo "SONIC_START=$(date --iso-8601=ns)"
+echo "SHOWHAND_RUN_ID=$run_id"
 target/release/g1_deploy_onnx_ref \
   eth0 policy/release/model_decoder.onnx reference/example/ \
   --obs-config policy/release/observation_config.yaml \

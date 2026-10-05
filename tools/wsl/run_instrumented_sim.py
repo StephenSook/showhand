@@ -172,6 +172,7 @@ def main() -> None:
         "expected_output_frames": None,
         "replay_end_monotonic_ns": None,
         "post_roll_s": None,
+        "run_id": None,
         "was_below_fall_height": False,
     }
 
@@ -191,9 +192,14 @@ def main() -> None:
                 command = request.get("command")
                 request_ns = time.monotonic_ns()
                 if command == "release" and state["elastic_release_ns"] is None:
+                    run_id = request.get("run_id")
+                    if not isinstance(run_id, str) or not run_id:
+                        raise RuntimeError("release request is missing run_id")
                     env.elastic_band.enable = False
                     state["elastic_release_ns"] = request_ns
+                    state["run_id"] = run_id
                     acknowledgement = {
+                        "run_id": run_id,
                         "release_monotonic_ns": request_ns,
                         "release_step_index": state["step"],
                         "release_sim_time_s": float(data.time),
@@ -201,6 +207,8 @@ def main() -> None:
                     connection.sendall((json.dumps(acknowledgement) + "\n").encode())
                     print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={request_ns}")
                 elif command in {"finish", "abort"} and state["elastic_release_ns"] is not None:
+                    if request.get("run_id") != state["run_id"]:
+                        raise RuntimeError("simulator control request run_id differs from release")
                     if state["completion_connection"] is not None:
                         raise RuntimeError("simulator already has a pending completion request")
                     if command == "finish":
@@ -347,6 +355,7 @@ def main() -> None:
             "expected_output_frames": state["expected_output_frames"],
             "replay_end_monotonic_ns": state["replay_end_monotonic_ns"],
             "post_roll_s": state["post_roll_s"],
+            "run_id": state["run_id"],
             "metadata_write_monotonic_ns": metadata_write_ns,
             "telemetry_sha256": telemetry_sha256,
             "telemetry_bytes": telemetry_bytes,
@@ -371,6 +380,7 @@ def main() -> None:
         if completion_connection is not None:
             acknowledgement = {
                 "completion_status": state["completion_status"],
+                "run_id": state["run_id"],
                 "completion_request_monotonic_ns": state["completion_request_ns"],
                 "artifacts_flushed_monotonic_ns": artifacts_flushed_ns,
                 "telemetry_steps": state["step"],

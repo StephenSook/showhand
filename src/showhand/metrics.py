@@ -189,7 +189,8 @@ def compute_take_metrics(
             mask = (elapsed_s >= start_s) & (elapsed_s < end_s)
         if not mask.any():
             continue
-        window_dt = np.minimum(dt[mask], np.maximum(0.0, end_s - elapsed_s[mask]))
+        duration_bound_s = evaluation_duration_s if end_s == duration_s else end_s
+        window_dt = np.minimum(dt[mask], np.maximum(0.0, duration_bound_s - elapsed_s[mask]))
         summary = _summarize_window(
             start_s,
             end_s,

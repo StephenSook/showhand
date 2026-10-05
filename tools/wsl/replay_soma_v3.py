@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import socket
 import sys
 import time
@@ -36,10 +37,15 @@ def main() -> None:
     parser.add_argument("--max-jitter-s", default=0.01, type=float)
     parser.add_argument("--post-roll-s", default=0.6, type=float)
     parser.add_argument("--publisher-warmup-s", default=0.5, type=float)
+    parser.add_argument("--run-id", required=True)
     parser.add_argument("--port", default=5556, type=int)
     args = parser.parse_args()
     if args.source_fps <= 0 or args.output_fps <= 0:
         raise SystemExit("source and output fps must be positive")
+    if re.fullmatch(r"[A-Za-z0-9._-]{1,128}", args.run_id) is None:
+        raise SystemExit(
+            "run id must use 1-128 ASCII letters, digits, dots, underscores, or hyphens"
+        )
 
     gemx_root = Path("/home/stephensookra/showhand/GEM-X")
     sonic_root = Path("/home/stephensookra/showhand/GR00T-WholeBodyControl")
@@ -91,8 +97,12 @@ def main() -> None:
         flush=True,
     )
     acknowledgement = _exchange(
-        args.handshake_socket, {"command": "release"}, args.handshake_timeout_s
+        args.handshake_socket,
+        {"command": "release", "run_id": args.run_id},
+        args.handshake_timeout_s,
     )
+    if acknowledgement.get("run_id") != args.run_id:
+        raise RuntimeError("simulator release acknowledgement run_id differs")
     release_ns = int(acknowledgement["release_monotonic_ns"])
 
     saved: dict[str, list[np.ndarray]] = {
@@ -135,6 +145,7 @@ def main() -> None:
                 args.handshake_socket,
                 {
                     "command": "abort",
+                    "run_id": args.run_id,
                     "error_type": type(error).__name__,
                     "published_frames": len(publish_monotonic_ns),
                 },
@@ -150,6 +161,7 @@ def main() -> None:
         args.handshake_socket,
         {
             "command": "finish",
+            "run_id": args.run_id,
             "output_frames": output_frames,
             "final_frame_index": output_frames - 1,
             "replay_end_monotonic_ns": end_ns,
@@ -161,6 +173,8 @@ def main() -> None:
         raise RuntimeError(
             f"simulator returned completion status {completion.get('completion_status')!r}"
         )
+    if completion.get("run_id") != args.run_id:
+        raise RuntimeError("simulator completion acknowledgement run_id differs")
 
     smpl_output = Path(args.smpl_output)
     smpl_output.parent.mkdir(parents=True, exist_ok=True)
@@ -173,6 +187,7 @@ def main() -> None:
     )
     timing = {
         "schema_version": 1,
+        "run_id": args.run_id,
         "source_pt": str(Path(args.pt).resolve()),
         "source_frames": source_frames,
         "source_fps": args.source_fps,
