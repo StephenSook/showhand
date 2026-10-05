@@ -21,7 +21,6 @@ def main() -> None:
     parser.add_argument("--smpl-output", required=True)
     parser.add_argument("--timing-output", required=True)
     parser.add_argument("--port", default=5556, type=int)
-    parser.add_argument("--warmup-seconds", default=1.0, type=float)
     args = parser.parse_args()
     if args.source_fps <= 0 or args.output_fps <= 0:
         raise SystemExit("source and output fps must be positive")
@@ -58,14 +57,22 @@ def main() -> None:
         smooth=0.0,
         sonic_root=str(sonic_root),
     )
+    conversion_started = time.perf_counter()
+    converted_by_source: dict[int, dict[str, np.ndarray]] = {}
+    for source_index in range(source_frames):
+        frame = {key: global_params[key][source_index] for key in required}
+        converted_by_source[source_index] = converter.convert(frame)
+    conversion_wall_s = time.perf_counter() - conversion_started
+
     publisher = SonicV3Publisher(port=args.port, sonic_root=str(sonic_root))
     print(
         f"REPLAY_SOURCE_FRAMES={source_frames} SOURCE_FPS={args.source_fps} "
-        f"OUTPUT_FRAMES={output_frames} OUTPUT_FPS={args.output_fps}"
+        f"OUTPUT_FRAMES={output_frames} OUTPUT_FPS={args.output_fps} "
+        f"CONVERSION_WALL_S={conversion_wall_s:.6f}",
+        flush=True,
     )
-    time.sleep(args.warmup_seconds)
+    input("REPLAY_READY press ENTER to start the 50 Hz clock\n")
 
-    converted_by_source: dict[int, dict[str, np.ndarray]] = {}
     saved: dict[str, list[np.ndarray]] = {
         "smpl_joints": [],
         "body_quat": [],
@@ -81,9 +88,6 @@ def main() -> None:
                 int((output_index / args.output_fps) * args.source_fps),
                 source_frames - 1,
             )
-            if source_index not in converted_by_source:
-                frame = {key: global_params[key][source_index] for key in required}
-                converted_by_source[source_index] = converter.convert(frame)
             converted = converted_by_source[source_index]
             publisher.publish(converted)
             for key in saved:
@@ -112,6 +116,7 @@ def main() -> None:
         "source_duration_s": source_duration_s,
         "output_frames": output_frames,
         "output_fps": args.output_fps,
+        "conversion_wall_s": conversion_wall_s,
         "resampling": "zero_order_hold_by_source_timestamp",
         "replay_start_monotonic_ns": start_ns,
         "replay_end_monotonic_ns": end_ns,
