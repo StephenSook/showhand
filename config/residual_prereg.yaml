@@ -1,0 +1,19 @@
+# Pre-registered before any real Showhand take or outside human grade exists.
+schema_version: 1
+status: waiting_for_real_takes_and_human_grades
+primary:
+  outcome: cohen_kappa_with_outside_human_binary_grade
+  treatment: fused_judge
+  baseline: tracking_error_alone
+  effect: paired_cohen_kappa_difference
+  interval: paired_bootstrap_percentile_95
+  bootstrap_replicates: 10000
+  bootstrap_seed: 20261005
+secondary:
+  report_each_judge_agreement_rate: true
+  report_confusion_matrices: true
+  report_n: true
+undefined_kappa: evaluation_invalid
+resampling_unit: whole_take
+missing_labels: reject
+synthetic_data_policy: unit_tests_only_never_report_as_results

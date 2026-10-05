@@ -1,0 +1,76 @@
+"""Command-line entry points for deterministic Showhand stages."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from showhand.fusion import request_fusion
+from showhand.metrics import compute_take_metrics, load_retargeted_motion, load_sim_telemetry
+from showhand.records import write_take_record
+from showhand.residual import load_rows, paired_agreement_residual
+from showhand.thresholds import load_thresholds
+from showhand.visual import load_visual_results
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="showhand")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    metrics_parser = sub.add_parser("metrics")
+    metrics_parser.add_argument("--retarget-csv", required=True)
+    metrics_parser.add_argument("--source-fps", required=True, type=float)
+    metrics_parser.add_argument("--telemetry", required=True)
+    metrics_parser.add_argument("--replay-start-ns", required=True, type=int)
+    metrics_parser.add_argument("--replay-end-ns", required=True, type=int)
+    metrics_parser.add_argument("--thresholds", default="config/thresholds.yaml")
+    metrics_parser.add_argument("--out", required=True)
+
+    fusion_parser = sub.add_parser("fusion")
+    fusion_parser.add_argument("--metrics", required=True)
+    fusion_parser.add_argument("--visual", required=True)
+    fusion_parser.add_argument("--out", required=True)
+
+    residual_parser = sub.add_parser("residual")
+    residual_parser.add_argument("--labels", required=True)
+    residual_parser.add_argument("--replicates", type=int, default=10_000)
+    residual_parser.add_argument("--seed", type=int, default=20_261_005)
+    residual_parser.add_argument("--out", required=True)
+
+    record_parser = sub.add_parser("write-record")
+    record_parser.add_argument("--input", required=True)
+    record_parser.add_argument("--out", required=True)
+
+    args = parser.parse_args()
+    if args.command == "metrics":
+        thresholds = load_thresholds(args.thresholds)
+        target = load_retargeted_motion(args.retarget_csv, args.source_fps)
+        telemetry = load_sim_telemetry(args.telemetry, args.replay_start_ns, args.replay_end_ns)
+        result = compute_take_metrics(target, telemetry, args.replay_start_ns, thresholds)
+        _write_json(args.out, result)
+    elif args.command == "fusion":
+        metrics = _read_json(args.metrics)
+        visual = load_visual_results(args.visual)
+        _write_json(args.out, request_fusion(metrics, visual))
+    elif args.command == "residual":
+        result = paired_agreement_residual(
+            load_rows(args.labels), replicates=args.replicates, seed=args.seed
+        )
+        _write_json(args.out, result)
+    elif args.command == "write-record":
+        write_take_record(args.out, _read_json(args.input))
+
+
+def _read_json(path: str) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _write_json(path: str, payload: object) -> None:
+    output = Path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
