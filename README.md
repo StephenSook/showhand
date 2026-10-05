@@ -104,7 +104,7 @@ These outputs come from Pexels stock clips. They are not product evidence.
 | Target motion duration | 8.84 s | 17.60 s |
 | GEM-X and retarget wall time | 523.342528 s across recovery steps | 722.984161 s |
 | Run ID | `pexels_5510095-20261005-ff05d94-r1` | `pexels_5510143-20261005-ff05d94-r1` |
-| Clean code commit | `ff05d94053023bce7d5b4dc17d6ad581ba4c1604` | `ff05d94053023bce7d5b4dc17d6ad581ba4c1604` |
+| Showhand commit, clean at replay start | `ff05d94053023bce7d5b4dc17d6ad581ba4c1604` | `ff05d94053023bce7d5b4dc17d6ad581ba4c1604` |
 | SOMA conversion before replay | 6.672334 s | 10.174046 s |
 | 50 Hz replay wall time | 8.840001 s | 17.600002 s |
 | Maximum 50 Hz publish jitter | 0.005299 s | 0.001185 s |
@@ -125,6 +125,8 @@ These outputs come from Pexels stock clips. They are not product evidence.
 
 Both clips failed the tracking p95, root height, root tilt, foot slip, time out of balance, and fall cutoffs. The short clip also failed the tracking mean cutoff. All metrics above begin after the simulator acknowledged support release and include the measured controller drain after the final publish. The metric computation is deterministic for a saved trace. The MuJoCo and SONIC executions are not claimed to reproduce identical trajectories across launches.
 
+The recorded clean commit covers this Showhand repository at replay start. These two plumbing runs did not capture runtime commits or input hashes for the external GEM-X and GEAR-SONIC trees, controller executable, policy weights, planner, or observation configuration. The take records hash the saved GEM-X outputs, replay inputs, controller log, simulator telemetry, render, metrics, and manifests. They must not be read as proof of the exact external stock-stack version.
+
 The first long GEM-X attempt was killed under the undocumented image-feature path. The first short attempt stopped after 86.663354 seconds with `ModuleNotFoundError: No module named 'sam_3d_body'`. The documented `--no-imgfeat` short run then produced pose files but failed at retargeting after 290.748189 seconds because the vendor BVH and USD files were Git LFS pointer text. The exact conversion error was `ValueError: could not convert string to float: 'size'`. Fetching those two LFS objects over HTTPS and running the saved-result retarget helper for 232.594339 seconds completed the stage.
 
 The long replay also exposed real WSL scheduling failures. Four attempts exceeded the unchanged 10 ms publish-jitter limit, at 0.032240 s on frame 710, 0.142612 s on frame 333, 0.044585 s on frame 18, and 0.010615 s on frame 199. A different attempt passed replay timing but was rejected because its telemetry contained a 0.342198 s gap against a 0.050000 s maximum. Another replay passed those gates but was withdrawn when the stronger receipt validator found that SONIC logged frames 5 through 880 instead of 0 through 880. The accepted run passed all validators after controller logs were moved to WSL-native storage, the bounded pacing margin was added, and the publisher warmup was introduced. These failed attempts are plumbing history, not additional takes.
@@ -144,3 +146,4 @@ The only current residual inputs are synthetic unit-test rows. Their numbers are
 - The pre-registered residual comparison therefore has no result.
 - The stock Pexels clips cannot establish product accuracy or value.
 - Cosmos L40S loadability is not claimed until the blocked cloud job runs.
+- Exact runtime provenance for the external GEM-X and GEAR-SONIC installations was not captured for these plumbing runs.

@@ -9,18 +9,70 @@ from showhand.records import validate_take_record, write_take_record
 
 
 def _record(tmp_path: Path) -> dict:
-    threshold = tmp_path / "thresholds.yaml"
-    threshold.write_text("frozen: true\n", encoding="utf-8")
+    threshold = Path("config/thresholds.yaml")
+    threshold_commit_sha = subprocess.check_output(
+        ["git", "rev-list", "-1", "HEAD", "--", threshold.as_posix()], text=True
+    ).strip()
+    threshold_sha256 = hashlib.sha256(threshold.read_bytes()).hexdigest()
     source = tmp_path / "source.mp4"
     source.write_bytes(b"source")
     telemetry = tmp_path / "telemetry.csv"
-    telemetry.write_text("monotonic_ns\n1\n", encoding="utf-8")
+    telemetry.write_text("monotonic_ns\n1000000000\n1610000000\n", encoding="utf-8")
+    telemetry_sha256 = hashlib.sha256(telemetry.read_bytes()).hexdigest()
     sim_metadata = tmp_path / "sim_meta.json"
-    sim_metadata.write_text("{}\n", encoding="utf-8")
+    sim_metadata.write_text(
+        json.dumps(
+            {
+                "run_id": "test-run",
+                "completion_request_monotonic_ns": 1_010_000_000,
+                "completion_status": "completed",
+                "expected_final_frame_index": 2,
+                "expected_output_frames": 3,
+                "telemetry_steps": 2,
+                "last_telemetry_monotonic_ns": 1_610_000_000,
+                "replay_end_monotonic_ns": 1_000_000_000,
+                "telemetry_sha256": telemetry_sha256,
+                "telemetry_bytes": telemetry.stat().st_size,
+                "post_roll_s": 0.6,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    metric_values = {
+        "tracking_mean_abs_error_rad": 0.1,
+        "tracking_p95_abs_error_rad": 0.2,
+        "root_height_min_m": 0.5,
+        "root_tilt_max_deg": 2.0,
+        "foot_slip_max_m_s": 0.0,
+        "foot_slip_seconds": 0.0,
+        "out_of_balance_seconds": 0.0,
+        "falls": 0,
+        "pass": True,
+        "reason_codes": [],
+    }
     metrics = tmp_path / "metrics.json"
-    metrics.write_text("{}\n", encoding="utf-8")
+    metrics.write_text(
+        json.dumps(
+            {
+                "overall": metric_values,
+                "post_roll_evaluated_s": 0.61,
+                "retargeter": "test-retargeter",
+                "threshold_sha256": threshold_sha256,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     sonic_console = tmp_path / "sonic.log"
-    sonic_console.write_text("controller evidence\n", encoding="utf-8")
+    sonic_console.write_text(
+        "SHOWHAND_RUN_BEGIN=test-run\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 0\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 1\n"
+        "Protocol v3: Received SMPL action (single) - frame_index: 2\n"
+        "SHOWHAND_RUN_END=test-run exit=0\n",
+        encoding="utf-8",
+    )
     code_commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     replay_timing = tmp_path / "replay_timing.json"
     replay_timing.write_text(
@@ -29,6 +81,24 @@ def _record(tmp_path: Path) -> dict:
                 "run_id": "test-run",
                 "code_commit_sha": code_commit_sha,
                 "code_tree_clean": True,
+                "source_frames": 3,
+                "source_fps": 2.0,
+                "source_duration_s": 1.0,
+                "output_frames": 3,
+                "expected_final_frame_index": 2,
+                "replay_end_monotonic_ns": 1_000_000_000,
+                "completion_request_monotonic_ns": 1_010_000_000,
+                "completion_status": "completed",
+                "simulator_telemetry_steps": 2,
+                "simulator_last_telemetry_monotonic_ns": 1_610_000_000,
+                "simulator_telemetry_sha256": telemetry_sha256,
+                "simulator_telemetry_bytes": telemetry.stat().st_size,
+                "post_roll_s": 0.6,
+                "artifacts_flushed_monotonic_ns": 1_620_000_000,
+                "publisher_warmup_s": 0.5,
+                "max_allowed_jitter_s": 0.01,
+                "publish_jitter_max_s": 0.001,
+                "publish_jitter_p95_s": 0.0001,
             }
         )
         + "\n",
@@ -38,14 +108,17 @@ def _record(tmp_path: Path) -> dict:
         "schema_version": 1,
         "take_id": "stock-1",
         "label": "PLUMBING TEST",
-        "threshold_commit_sha": "0" * 40,
+        "threshold_commit_sha": threshold_commit_sha,
         "threshold_path": str(threshold),
-        "threshold_sha256": hashlib.sha256(threshold.read_bytes()).hexdigest(),
+        "threshold_sha256": threshold_sha256,
         "code_commit_sha": code_commit_sha,
         "code_tree_clean": True,
         "source": {
             "path": str(source),
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "frames": 3,
+            "fps": 2.0,
+            "pose_duration_s": 1.0,
         },
         "artifacts": {
             "sim_step_telemetry": str(telemetry),
@@ -56,11 +129,21 @@ def _record(tmp_path: Path) -> dict:
             "visual_output": None,
         },
         "timings_s": {"gem_x": 1.0},
-        "metrics": {"pass": True, "reason_codes": []},
+        "metrics": {**metric_values, "retargeter": "test-retargeter"},
         "replay_validation": {
             "run_id": "test-run",
-            "telemetry_sha256": hashlib.sha256(telemetry.read_bytes()).hexdigest(),
+            "publisher_warmup_s": 0.5,
+            "max_allowed_jitter_s": 0.01,
+            "publish_jitter_max_s": 0.001,
+            "publish_jitter_p95_s": 0.0001,
+            "sonic_received_frames": 3,
+            "sonic_first_frame": 0,
+            "sonic_final_frame": 2,
+            "telemetry_steps": 2,
+            "telemetry_bytes": telemetry.stat().st_size,
+            "telemetry_sha256": telemetry_sha256,
             "replay_timing_sha256": hashlib.sha256(replay_timing.read_bytes()).hexdigest(),
+            "post_roll_evaluated_s": 0.61,
         },
         "visual_judge": {"status": "blocked_before_job_create", "job": {}},
         "fusion": {"status": "not_run_missing_visual_verdicts"},
@@ -104,4 +187,27 @@ def test_take_record_rejects_replay_hash_mismatch(tmp_path: Path) -> None:
     record = _record(tmp_path)
     record["replay_validation"]["telemetry_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="replay validation hash differs"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_take_record_rejects_supplied_run_identity_mismatch(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    record["replay_validation"]["run_id"] = "other-run"
+    with pytest.raises(ValueError, match="supplied run_id differs"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_take_record_rejects_metric_artifact_mismatch(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    record["metrics"]["falls"] = 1
+    record["metrics"]["pass"] = False
+    record["metrics"]["reason_codes"] = ["fall"]
+    with pytest.raises(ValueError, match="differs from metrics artifact"):
+        write_take_record(tmp_path / "record.json", record)
+
+
+def test_take_record_rejects_uncommitted_threshold_claim(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    record["threshold_commit_sha"] = "0" * 40
+    with pytest.raises(ValueError, match="threshold_commit_sha does not name a commit"):
         write_take_record(tmp_path / "record.json", record)

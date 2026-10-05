@@ -126,8 +126,41 @@ def test_completion_ignores_receipts_outside_run_boundaries(tmp_path: Path) -> N
     sonic_console.write_text(
         stale_receipts
         + "\nSHOWHAND_RUN_BEGIN=test-run\n"
-        + "controller active\nSHOWHAND_RUN_END=test-run exit=0\n",
+        + stale_receipts
+        + "\nSHOWHAND_RUN_END=test-run exit=0\n"
+        + stale_receipts
+        + "\n",
         encoding="utf-8",
     )
-    with pytest.raises(ValueError, match="receipt is incomplete"):
+    _validate_completion(timing, metadata, telemetry, sonic_console)
+
+
+def test_completion_rejects_duplicate_run_boundaries(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _evidence(tmp_path)
+    sonic_console.write_text(
+        sonic_console.read_text(encoding="utf-8")
+        + "SHOWHAND_RUN_BEGIN=test-run\nSHOWHAND_RUN_END=test-run exit=0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="one successful run boundary"):
+        _validate_completion(timing, metadata, telemetry, sonic_console)
+
+
+def test_completion_rejects_reversed_run_boundaries(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _evidence(tmp_path)
+    sonic_console.write_text(
+        "SHOWHAND_RUN_END=test-run exit=0\nSHOWHAND_RUN_BEGIN=test-run\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="out of order"):
+        _validate_completion(timing, metadata, telemetry, sonic_console)
+
+
+def test_completion_rejects_nonzero_end_marker(tmp_path: Path) -> None:
+    timing, metadata, telemetry, sonic_console = _evidence(tmp_path)
+    sonic_console.write_text(
+        sonic_console.read_text(encoding="utf-8").replace("exit=0", "exit=1"),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="successful run boundary"):
         _validate_completion(timing, metadata, telemetry, sonic_console)
