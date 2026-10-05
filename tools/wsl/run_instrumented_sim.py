@@ -93,7 +93,7 @@ def main() -> None:
 
     config = SimLoopConfig(
         interface=args.interface,
-        enable_onscreen=True,
+        enable_onscreen=False,
         enable_offscreen=False,
     )
     values = config.load_wbc_yaml()
@@ -101,7 +101,7 @@ def main() -> None:
     simulator = BaseSimulator(
         config=values,
         env_name=config.env_name,
-        onscreen=True,
+        onscreen=False,
         offscreen=False,
         enable_image_publish=False,
     )
@@ -228,6 +228,7 @@ def main() -> None:
             "schema_version": 1,
             "telemetry_steps": state["step"],
             "sim_frequency_hz": 1.0 / env.sim_dt,
+            "onscreen_viewer_during_control": False,
             "offscreen_render_during_control": False,
             "elastic_band_startup_enabled": True,
             "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
