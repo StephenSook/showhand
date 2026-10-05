@@ -154,42 +154,82 @@ def main() -> None:
         "previous_left": None,
         "previous_right": None,
         "elastic_release_ns": None,
-        "finish_request_ns": None,
+        "completion_connection": None,
+        "completion_request_ns": None,
+        "completion_status": None,
+        "drain_deadline_ns": None,
+        "expected_final_frame_index": None,
+        "expected_output_frames": None,
+        "replay_end_monotonic_ns": None,
+        "post_roll_s": None,
         "was_below_fall_height": False,
     }
 
     def record_then_check_fall() -> None:
         stamp = time.monotonic_ns()
-        stop_after_sample = False
         try:
             connection, _ = handshake.accept()
         except BlockingIOError:
             connection = None
         if connection is not None:
-            with connection:
-                request = connection.recv(64)
-                if request == b"release\n" and state["elastic_release_ns"] is None:
+            try:
+                with connection.makefile("r", encoding="utf-8") as request_stream:
+                    line = request_stream.readline()
+                if not line:
+                    raise RuntimeError("empty simulator control request")
+                request = json.loads(line)
+                command = request.get("command")
+                request_ns = time.monotonic_ns()
+                if command == "release" and state["elastic_release_ns"] is None:
                     env.elastic_band.enable = False
-                    state["elastic_release_ns"] = stamp
+                    state["elastic_release_ns"] = request_ns
                     acknowledgement = {
-                        "release_monotonic_ns": stamp,
+                        "release_monotonic_ns": request_ns,
                         "release_step_index": state["step"],
                         "release_sim_time_s": float(data.time),
                     }
                     connection.sendall((json.dumps(acknowledgement) + "\n").encode())
-                    print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={stamp}")
-                elif request == b"finish\n" and state["elastic_release_ns"] is not None:
-                    state["finish_request_ns"] = stamp
-                    acknowledgement = {
-                        "finish_monotonic_ns": stamp,
-                        "finish_step_index": state["step"],
-                        "finish_sim_time_s": float(data.time),
-                    }
-                    connection.sendall((json.dumps(acknowledgement) + "\n").encode())
-                    stop_after_sample = True
-                    print(f"SHOWHAND_REPLAY=finished monotonic_ns={stamp}")
+                    print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={request_ns}")
+                elif command in {"finish", "abort"} and state["elastic_release_ns"] is not None:
+                    if state["completion_connection"] is not None:
+                        raise RuntimeError("simulator already has a pending completion request")
+                    if command == "finish":
+                        output_frames = int(request["output_frames"])
+                        final_frame_index = int(request["final_frame_index"])
+                        replay_end_ns = int(request["replay_end_monotonic_ns"])
+                        post_roll_s = float(request["post_roll_s"])
+                        if output_frames <= 0 or final_frame_index != output_frames - 1:
+                            raise RuntimeError("finish request has inconsistent frame count")
+                        if replay_end_ns > request_ns:
+                            raise RuntimeError("finish request predates replay end")
+                        if not 0.1 <= post_roll_s <= 2.0:
+                            raise RuntimeError(
+                                "finish post-roll must be between 0.1 and 2.0 seconds"
+                            )
+                        state["completion_status"] = "completed"
+                        state["expected_final_frame_index"] = final_frame_index
+                        state["expected_output_frames"] = output_frames
+                        state["replay_end_monotonic_ns"] = replay_end_ns
+                        state["post_roll_s"] = post_roll_s
+                        state["drain_deadline_ns"] = max(request_ns, replay_end_ns) + round(
+                            post_roll_s * 1_000_000_000
+                        )
+                        print(
+                            "SHOWHAND_REPLAY=draining "
+                            f"final_frame_index={final_frame_index} post_roll_s={post_roll_s}"
+                        )
+                    else:
+                        state["completion_status"] = "aborted"
+                        state["drain_deadline_ns"] = request_ns
+                        print("SHOWHAND_REPLAY=aborting")
+                    state["completion_request_ns"] = request_ns
+                    state["completion_connection"] = connection
+                    connection = None
                 else:
-                    raise RuntimeError(f"invalid simulator handshake request: {request!r}")
+                    raise RuntimeError(f"invalid simulator control request: {request!r}")
+            finally:
+                if connection is not None:
+                    connection.close()
         root = data.qpos[:7].copy()
         joints = data.qpos[env.body_joint_index + env.qpos_offset - 1].copy()
         com = data.subtree_com[env.root_body_id].copy()
@@ -258,7 +298,7 @@ def main() -> None:
         )
         state["was_below_fall_height"] = below_fall_height
         old_check_fall()
-        if stop_after_sample:
+        if state["drain_deadline_ns"] is not None and stamp >= state["drain_deadline_ns"]:
             simulator._running = False
 
     env.check_fall = record_then_check_fall
@@ -272,16 +312,25 @@ def main() -> None:
             telemetry_writer = csv.DictWriter(handle, fieldnames=fields)
             telemetry_writer.writeheader()
             telemetry_writer.writerows(telemetry_rows)
+        metadata_write_ns = time.monotonic_ns()
         metadata = {
             "schema_version": 1,
             "telemetry_steps": state["step"],
+            "last_telemetry_monotonic_ns": (
+                int(telemetry_rows[-1]["monotonic_ns"]) if telemetry_rows else None
+            ),
             "sim_frequency_hz": 1.0 / env.sim_dt,
             "onscreen_viewer_during_control": False,
             "offscreen_render_during_control": False,
             "elastic_band_startup_enabled": True,
             "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
-            "replay_finish_request_monotonic_ns": state["finish_request_ns"],
-            "self_terminated_after_finish_request": state["finish_request_ns"] is not None,
+            "completion_request_monotonic_ns": state["completion_request_ns"],
+            "completion_status": state["completion_status"],
+            "expected_final_frame_index": state["expected_final_frame_index"],
+            "expected_output_frames": state["expected_output_frames"],
+            "replay_end_monotonic_ns": state["replay_end_monotonic_ns"],
+            "post_roll_s": state["post_roll_s"],
+            "metadata_write_monotonic_ns": metadata_write_ns,
             "fall_condition": "transition into root_height_m < 0.2 before stock reset",
             "foot_slip_definition": (
                 "horizontal contact-foot displacement divided by measured simulator time; "
@@ -292,6 +341,23 @@ def main() -> None:
             ),
         }
         Path(args.sim_meta).write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+        artifacts_flushed_ns = time.monotonic_ns()
+        completion_connection = state["completion_connection"]
+        if completion_connection is not None:
+            acknowledgement = {
+                "completion_status": state["completion_status"],
+                "completion_request_monotonic_ns": state["completion_request_ns"],
+                "artifacts_flushed_monotonic_ns": artifacts_flushed_ns,
+                "telemetry_steps": state["step"],
+                "last_telemetry_monotonic_ns": metadata["last_telemetry_monotonic_ns"],
+                "expected_final_frame_index": state["expected_final_frame_index"],
+                "expected_output_frames": state["expected_output_frames"],
+            }
+            try:
+                completion_connection.sendall((json.dumps(acknowledgement) + "\n").encode())
+            finally:
+                completion_connection.close()
+        print(f"SHOWHAND_ARTIFACTS_FLUSHED={artifacts_flushed_ns}")
         print(json.dumps(metadata, sort_keys=True))
 
 

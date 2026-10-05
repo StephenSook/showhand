@@ -50,13 +50,7 @@ def main() -> None:
         sim_meta = _read_json(args.sim_meta)
         replay_start_ns = int(timing["replay_start_monotonic_ns"])
         replay_end_ns = int(timing["replay_end_monotonic_ns"])
-        finish_ns = int(timing["simulator_finish_monotonic_ns"])
-        if finish_ns < replay_end_ns:
-            raise ValueError("simulator finish acknowledgement predates replay completion")
-        if int(sim_meta["replay_finish_request_monotonic_ns"]) != finish_ns:
-            raise ValueError("simulator finish provenance differs between timing and metadata")
-        if not sim_meta["self_terminated_after_finish_request"]:
-            raise ValueError("simulator did not self-terminate after the replay finish request")
+        _validate_completion(timing, sim_meta)
         target = load_retargeted_motion(args.retarget_csv, args.source_fps)
         telemetry = load_sim_telemetry(
             args.telemetry,
@@ -74,6 +68,8 @@ def main() -> None:
             "release_before_replay": True,
             "replay_start_monotonic_ns": replay_start_ns,
             "replay_end_monotonic_ns": replay_end_ns,
+            "post_roll_s": float(timing["post_roll_s"]),
+            "artifacts_flushed_monotonic_ns": int(timing["artifacts_flushed_monotonic_ns"]),
             "elastic_band_release_monotonic_ns": int(sim_meta["elastic_band_release_monotonic_ns"]),
         }
         _write_json(args.out, result)
@@ -95,6 +91,38 @@ def main() -> None:
 
 def _read_json(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _validate_completion(timing: dict, sim_meta: dict) -> None:
+    replay_end_ns = int(timing["replay_end_monotonic_ns"])
+    completion_request_ns = int(timing["completion_request_monotonic_ns"])
+    if timing["completion_status"] != "completed" or sim_meta["completion_status"] != "completed":
+        raise ValueError("simulator completion status is not completed")
+    if completion_request_ns != int(sim_meta["completion_request_monotonic_ns"]):
+        raise ValueError("simulator completion request provenance differs")
+    if completion_request_ns < replay_end_ns:
+        raise ValueError("simulator completion request predates replay end")
+    if int(timing["expected_final_frame_index"]) != int(timing["output_frames"]) - 1:
+        raise ValueError("completion final frame index differs from replay output")
+    if int(sim_meta["expected_final_frame_index"]) != int(timing["expected_final_frame_index"]):
+        raise ValueError("simulator final frame index differs from replay output")
+    if int(sim_meta["expected_output_frames"]) != int(timing["output_frames"]):
+        raise ValueError("simulator expected frame count differs from replay output")
+    if int(timing["simulator_telemetry_steps"]) != int(sim_meta["telemetry_steps"]):
+        raise ValueError("simulator telemetry step count differs from metadata")
+    last_telemetry_ns = int(timing["simulator_last_telemetry_monotonic_ns"])
+    if last_telemetry_ns != int(sim_meta["last_telemetry_monotonic_ns"]):
+        raise ValueError("simulator final telemetry timestamp differs from metadata")
+    post_roll_s = float(timing["post_roll_s"])
+    if post_roll_s != float(sim_meta["post_roll_s"]):
+        raise ValueError("simulator post-roll differs from replay timing")
+    required_drain_end_ns = max(replay_end_ns, completion_request_ns) + round(
+        post_roll_s * 1_000_000_000
+    )
+    if last_telemetry_ns < required_drain_end_ns:
+        raise ValueError("simulator telemetry does not cover the required controller drain")
+    if int(timing["artifacts_flushed_monotonic_ns"]) <= last_telemetry_ns:
+        raise ValueError("simulator acknowledged completion before artifacts were flushed")
 
 
 def _write_json(path: str, payload: object) -> None:

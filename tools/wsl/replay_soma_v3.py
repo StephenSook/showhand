@@ -23,7 +23,9 @@ def main() -> None:
     parser.add_argument("--timing-output", required=True)
     parser.add_argument("--handshake-socket", required=True)
     parser.add_argument("--handshake-timeout-s", default=5.0, type=float)
+    parser.add_argument("--completion-timeout-s", default=30.0, type=float)
     parser.add_argument("--max-jitter-s", default=0.01, type=float)
+    parser.add_argument("--post-roll-s", default=0.6, type=float)
     parser.add_argument("--port", default=5556, type=int)
     args = parser.parse_args()
     if args.source_fps <= 0 or args.output_fps <= 0:
@@ -75,7 +77,9 @@ def main() -> None:
         f"CONVERSION_WALL_S={conversion_wall_s:.6f}",
         flush=True,
     )
-    acknowledgement = _handshake(args.handshake_socket, b"release\n", args.handshake_timeout_s)
+    acknowledgement = _exchange(
+        args.handshake_socket, {"command": "release"}, args.handshake_timeout_s
+    )
     release_ns = int(acknowledgement["release_monotonic_ns"])
 
     saved: dict[str, list[np.ndarray]] = {
@@ -113,11 +117,38 @@ def main() -> None:
             source_indices.append(source_index)
             publish_monotonic_ns.append(publish_ns)
             publish_jitter_s.append(jitter_s)
-    finally:
-        end_ns = time.monotonic_ns()
+    except BaseException as error:
         publisher.close()
-        finish_acknowledgement = _handshake(
-            args.handshake_socket, b"finish\n", args.handshake_timeout_s
+        try:
+            _exchange(
+                args.handshake_socket,
+                {
+                    "command": "abort",
+                    "error_type": type(error).__name__,
+                    "published_frames": len(publish_monotonic_ns),
+                },
+                args.handshake_timeout_s,
+            )
+        except Exception as cleanup_error:
+            error.add_note(f"simulator abort also failed: {cleanup_error}")
+        raise
+    else:
+        publisher.close()
+    end_ns = publish_monotonic_ns[-1]
+    completion = _exchange(
+        args.handshake_socket,
+        {
+            "command": "finish",
+            "output_frames": output_frames,
+            "final_frame_index": output_frames - 1,
+            "replay_end_monotonic_ns": end_ns,
+            "post_roll_s": args.post_roll_s,
+        },
+        args.completion_timeout_s,
+    )
+    if completion.get("completion_status") != "completed":
+        raise RuntimeError(
+            f"simulator returned completion status {completion.get('completion_status')!r}"
         )
 
     smpl_output = Path(args.smpl_output)
@@ -143,8 +174,13 @@ def main() -> None:
         "resampling": "zero_order_hold_by_source_timestamp",
         "replay_start_monotonic_ns": start_ns,
         "replay_end_monotonic_ns": end_ns,
-        "simulator_finish_monotonic_ns": int(finish_acknowledgement["finish_monotonic_ns"]),
-        "simulator_finish_step_index": int(finish_acknowledgement["finish_step_index"]),
+        "completion_status": completion["completion_status"],
+        "completion_request_monotonic_ns": int(completion["completion_request_monotonic_ns"]),
+        "artifacts_flushed_monotonic_ns": int(completion["artifacts_flushed_monotonic_ns"]),
+        "simulator_last_telemetry_monotonic_ns": int(completion["last_telemetry_monotonic_ns"]),
+        "simulator_telemetry_steps": int(completion["telemetry_steps"]),
+        "expected_final_frame_index": int(completion["expected_final_frame_index"]),
+        "post_roll_s": args.post_roll_s,
         "wall_duration_s": (end_ns - start_ns) / 1_000_000_000,
         "publish_jitter_max_s": max(publish_jitter_s, default=0.0),
         "publish_jitter_p95_s": float(np.percentile(publish_jitter_s, 95)),
@@ -157,12 +193,12 @@ def main() -> None:
     print(json.dumps(timing, sort_keys=True))
 
 
-def _handshake(socket_path: str, request: bytes, timeout_s: float) -> dict:
+def _exchange(socket_path: str, request: dict, timeout_s: float) -> dict:
     connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     connection.settimeout(timeout_s)
     try:
         connection.connect(socket_path)
-        connection.sendall(request)
+        connection.sendall((json.dumps(request) + "\n").encode())
         with connection.makefile("r", encoding="utf-8") as response:
             line = response.readline()
         if not line:
