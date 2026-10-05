@@ -1,0 +1,30 @@
+# FROZEN before the first Phase 1 graded run.
+# These are pre-registered engineering cutoffs, not measured findings.
+# Never tune them against the two Pexels plumbing clips.
+schema_version: 1
+frozen: true
+window_seconds: 1.0
+
+tracking:
+  # Mean absolute joint error across the 29 G1 joints.
+  max_mean_abs_error_rad: 0.50
+  # Per-sample 95th percentile absolute joint error across the 29 G1 joints.
+  max_p95_abs_error_rad: 1.00
+
+balance:
+  # This matches the stock GEAR-SONIC MuJoCo fall-reset condition.
+  fall_root_height_m: 0.20
+  max_root_tilt_deg: 35.0
+  max_out_of_balance_seconds: 0.50
+  support_margin_m: 0.02
+  foot_half_length_m: 0.12
+  foot_half_width_m: 0.06
+
+foot_slip:
+  contact_speed_threshold_m_s: 0.10
+  max_slip_seconds: 0.50
+
+decision:
+  any_fall_is_reshow: true
+  any_visual_mismatch_is_reshow: true
+

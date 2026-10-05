@@ -1,0 +1,57 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Input media and generated media stay outside git.
+clips/
+renders/
+artifacts/
+outputs/
+*.mp4
+*.mov
+*.avi
+
+# Model weights and generated inference engines are too large for git.
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.engine
+*.trt
+weights/
+models/
+
+# Local caches and downloaded vendor trees.
+.cache/
+cache/
+node_modules/
+
+# Secrets and local environment files.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# Runtime scratch and logs. Curated JSON reports are committed separately.
+run/
+logs/
+*.log
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
