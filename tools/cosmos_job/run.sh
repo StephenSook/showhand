@@ -4,7 +4,8 @@ set -euo pipefail
 take_id="$1"
 mkdir -p /work/pairs
 cp /inject/visual_judge.py /work/visual_judge.py
-tar -xzf /inject/pairs.tar.gz -C /work/pairs
+cp /inject/pairs/manifest.json /work/pairs/manifest.json
+cp /inject/pairs/window-*.jpg /work/pairs/
 
 export PIP_BREAK_SYSTEM_PACKAGES=1
 pip install --quiet --no-cache-dir \
