@@ -28,7 +28,7 @@
     "sim_metadata": "artifacts/runs/pexels_5510143/sim/sim_meta.json",
     "replay_timing": "artifacts/runs/pexels_5510143/replay_timing.json",
     "sim_render": "artifacts/runs/pexels_5510143/sim/render.mp4",
-    "render_timestamps": "artifacts/runs/pexels_5510143/sim/render_timestamps.json",
+    "render_timestamps": "artifacts/runs/pexels_5510143/sim/render_timestamps.csv",
     "render_metadata": "artifacts/runs/pexels_5510143/sim/render_meta.json",
     "metrics": "artifacts/runs/pexels_5510143/metrics.json",
     "visual_pairs": "artifacts/runs/pexels_5510143/visual",
