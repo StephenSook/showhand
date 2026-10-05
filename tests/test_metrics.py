@@ -78,6 +78,32 @@ def test_metrics_refuse_empty_replay_interval(tmp_path: Path) -> None:
         load_sim_telemetry(telemetry_path, 3_000_000_000, 4_000_000_000)
 
 
+def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None:
+    target_path = tmp_path / "target.csv"
+    telemetry_path = tmp_path / "telemetry.csv"
+    _write_target(target_path)
+    _write_telemetry(telemetry_path)
+    target = load_retargeted_motion(target_path, fps=2.0)
+    telemetry = load_sim_telemetry(telemetry_path, 1_000_000_000, 2_000_000_000)
+    late = dict(telemetry[-1])
+    late.update(
+        {
+            "monotonic_ns": 2_500_000_000,
+            "root_height_m": 0.0,
+            "fall_event": 1.0,
+            **{f"q_{joint}": 2.0 for joint in range(29)},
+        }
+    )
+    telemetry.append(late)
+
+    result = compute_take_metrics(
+        target, telemetry, 1_000_000_000, load_thresholds("config/thresholds.yaml")
+    )
+
+    assert result["telemetry_samples"] == 3
+    assert result["overall"]["pass"] is True
+
+
 def test_retargeted_joint_order_is_enforced(tmp_path: Path) -> None:
     target_path = tmp_path / "target.csv"
     names = list(EXPECTED_RETARGET_COLUMNS)

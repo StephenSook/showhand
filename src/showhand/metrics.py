@@ -131,6 +131,11 @@ def compute_take_metrics(
         [(row["monotonic_ns"] - replay_start_monotonic_ns) / 1_000_000_000 for row in telemetry],
         dtype=np.float64,
     )
+    within_target = (elapsed_s >= 0.0) & (elapsed_s <= target.duration_s)
+    if not within_target.any():
+        raise MetricsInputError("telemetry does not overlap the retargeted motion duration")
+    elapsed_s = elapsed_s[within_target]
+    telemetry = [row for row, keep in zip(telemetry, within_target, strict=True) if keep]
     measured = np.asarray(
         [[row[f"q_{i}"] for i in range(29)] for row in telemetry], dtype=np.float64
     )
