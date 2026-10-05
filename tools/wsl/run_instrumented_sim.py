@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run stock SONIC MuJoCo with a per-step physics trace and observer render."""
+"""Run stock SONIC MuJoCo with a per-step physics trace."""
 
 from __future__ import annotations
 
@@ -11,8 +11,6 @@ import time
 from contextlib import ExitStack
 from pathlib import Path
 
-import cv2
-import mujoco
 import numpy as np
 from gear_sonic.utils.mujoco_sim.base_sim import BaseSimulator
 from gear_sonic.utils.mujoco_sim.configs import SimLoopConfig
@@ -83,9 +81,7 @@ def _root_tilt_deg(quaternion_wxyz: np.ndarray) -> float:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--telemetry", required=True)
-    parser.add_argument("--render", required=True)
-    parser.add_argument("--render-timestamps", required=True)
-    parser.add_argument("--render-meta", required=True)
+    parser.add_argument("--sim-meta", required=True)
     parser.add_argument("--release-file", required=True)
     parser.add_argument("--interface", default="eth0")
     parser.add_argument("--foot-half-length-m", default=0.12, type=float)
@@ -93,32 +89,22 @@ def main() -> None:
     parser.add_argument("--support-margin-m", default=0.02, type=float)
     args = parser.parse_args()
 
-    for output in (args.telemetry, args.render, args.render_timestamps, args.render_meta):
+    for output in (args.telemetry, args.sim_meta):
         Path(output).parent.mkdir(parents=True, exist_ok=True)
 
     config = SimLoopConfig(
         interface=args.interface,
         enable_onscreen=True,
-        enable_offscreen=True,
+        enable_offscreen=False,
     )
     values = config.load_wbc_yaml()
     values["ENV_NAME"] = config.env_name
-    camera = mujoco.MjvCamera()
-    camera.type = mujoco.mjtCamera.mjCAMERA_TRACKING
-    camera.trackbodyid = 1
-    camera.azimuth = 120
-    camera.elevation = -20
-    camera.distance = 2.5
-    camera.lookat[:] = np.asarray([0.0, 0.0, 0.6])
     simulator = BaseSimulator(
         config=values,
         env_name=config.env_name,
         onscreen=True,
-        offscreen=True,
+        offscreen=False,
         enable_image_publish=False,
-        camera_configs={
-            "observer": {"height": 480, "width": 640, "params": camera},
-        },
     )
     env = simulator.sim_env
     if env.elastic_band is None:
@@ -127,7 +113,6 @@ def main() -> None:
     if release_file.exists():
         raise RuntimeError(f"release marker already exists: {release_file}")
     print("SHOWHAND_ELASTIC_BAND=startup_enabled")
-    camera.trackbodyid = env.root_body_id
     model = env.mj_model
     data = env.mj_data
     floor_geom = model.geom("floor").id
@@ -163,31 +148,11 @@ def main() -> None:
     )
     telemetry_writer = csv.DictWriter(telemetry_handle, fieldnames=fields)
     telemetry_writer.writeheader()
-    render_time_handle = handles.enter_context(
-        Path(args.render_timestamps).open("w", newline="", encoding="utf-8")  # noqa: SIM115
-    )
-    render_time_writer = csv.DictWriter(
-        render_time_handle, fieldnames=["frame_index", "monotonic_ns", "sim_time_s"]
-    )
-    render_time_writer.writeheader()
-    video = cv2.VideoWriter(
-        args.render,
-        cv2.VideoWriter_fourcc(*"mp4v"),
-        30.0,
-        (640, 480),
-    )
-    if not video.isOpened():
-        raise RuntimeError("OpenCV could not open the observer MP4 writer")
-
     old_check_fall = env.check_fall
-    old_render = env.update_render_caches
     state = {
         "step": 0,
-        "frame": 0,
         "previous_left": None,
         "previous_right": None,
-        "first_render_ns": None,
-        "last_render_ns": None,
         "elastic_release_ns": None,
     }
 
@@ -256,39 +221,17 @@ def main() -> None:
             state["previous_right"] = right_position
         old_check_fall()
 
-    def render_and_write() -> dict[str, np.ndarray]:
-        stamp = time.monotonic_ns()
-        frames = old_render()
-        frame = frames["observer_image"]
-        video.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-        render_time_writer.writerow(
-            {
-                "frame_index": state["frame"],
-                "monotonic_ns": stamp,
-                "sim_time_s": float(data.time),
-            }
-        )
-        state["frame"] += 1
-        state["first_render_ns"] = state["first_render_ns"] or stamp
-        state["last_render_ns"] = stamp
-        return frames
-
     env.check_fall = record_then_check_fall
-    env.update_render_caches = render_and_write
     print("SHOWHAND_SIM_INSTRUMENTATION=active")
     try:
         simulator.start()
     finally:
-        video.release()
         handles.close()
         metadata = {
             "schema_version": 1,
-            "render_fps": 30.0,
-            "frames": state["frame"],
-            "first_render_monotonic_ns": state["first_render_ns"],
-            "last_render_monotonic_ns": state["last_render_ns"],
             "telemetry_steps": state["step"],
             "sim_frequency_hz": 1.0 / env.sim_dt,
+            "offscreen_render_during_control": False,
             "elastic_band_startup_enabled": True,
             "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
             "fall_condition": "root_height_m < 0.2 before stock reset",
@@ -296,7 +239,7 @@ def main() -> None:
                 "COM projection inside convex hull of oriented contact-foot rectangles"
             ),
         }
-        Path(args.render_meta).write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+        Path(args.sim_meta).write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(metadata, sort_keys=True))
 
 
