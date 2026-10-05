@@ -71,9 +71,7 @@ def main() -> None:
         )
         robot_s = frame_index / 30.0
         destination = output / f"window-{index:03d}.jpg"
-        command = build_ffmpeg_command(
-            args.human, args.robot, center_s, robot_s, destination
-        )
+        command = build_ffmpeg_command(args.human, args.robot, center_s, robot_s, destination)
         subprocess.run(command, check=True)
         manifest.append(
             {
