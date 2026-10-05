@@ -50,11 +50,17 @@ def paired_agreement_residual(
     *,
     replicates: int = 10_000,
     seed: int = 20_261_005,
+    label_source: str,
+    minimum_valid_fraction: float = 0.95,
 ) -> dict[str, object]:
     if not rows:
         raise ResidualInputError("at least one labeled take is required")
     if replicates <= 0:
         raise ResidualInputError("bootstrap replicates must be positive")
+    if label_source not in {"human", "synthetic"}:
+        raise ResidualInputError("label_source must be human or synthetic")
+    if not 0 < minimum_valid_fraction <= 1:
+        raise ResidualInputError("minimum_valid_fraction must be in (0, 1]")
     ordered = sorted(rows, key=lambda row: row.take_id)
     human = np.asarray([row.human_accept for row in ordered], dtype=bool)
     fused = np.asarray([row.fused_accept for row in ordered], dtype=bool)
@@ -76,8 +82,12 @@ def paired_agreement_residual(
             )
         except ResidualInputError:
             invalid += 1
-    if not deltas:
-        raise ResidualInputError("all bootstrap replicates had undefined Cohen kappa")
+    minimum_valid = math.ceil(replicates * minimum_valid_fraction)
+    if len(deltas) < minimum_valid:
+        raise ResidualInputError(
+            f"only {len(deltas)} of {replicates} bootstrap replicates had defined Cohen kappa; "
+            f"minimum is {minimum_valid}"
+        )
     low, high = np.percentile(deltas, [2.5, 97.5])
     return {
         "schema_version": 1,
@@ -91,7 +101,8 @@ def paired_agreement_residual(
         "bootstrap_replicates": replicates,
         "bootstrap_invalid_replicates": invalid,
         "bootstrap_seed": seed,
-        "label_source": "human",
+        "minimum_valid_bootstrap_fraction": minimum_valid_fraction,
+        "label_source": label_source,
         "fused_confusion": _confusion(human, fused),
         "tracking_confusion": _confusion(human, tracking),
     }

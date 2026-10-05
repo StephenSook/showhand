@@ -13,7 +13,9 @@ secondary:
   report_each_judge_agreement_rate: true
   report_confusion_matrices: true
   report_n: true
-undefined_kappa: evaluation_invalid
+observed_undefined_kappa: evaluation_invalid
+bootstrap_undefined_kappa: discard_replicate
+minimum_valid_bootstrap_fraction: 0.95
 resampling_unit: whole_take
 missing_labels: reject
 synthetic_data_policy: unit_tests_only_never_report_as_results

@@ -36,6 +36,7 @@ def main() -> None:
     residual_parser.add_argument("--labels", required=True)
     residual_parser.add_argument("--replicates", type=int, default=10_000)
     residual_parser.add_argument("--seed", type=int, default=20_261_005)
+    residual_parser.add_argument("--label-source", choices=("human", "synthetic"), required=True)
     residual_parser.add_argument("--out", required=True)
 
     record_parser = sub.add_parser("write-record")
@@ -75,7 +76,10 @@ def main() -> None:
         _write_json(args.out, request_fusion(metrics, visual))
     elif args.command == "residual":
         result = paired_agreement_residual(
-            load_rows(args.labels), replicates=args.replicates, seed=args.seed
+            load_rows(args.labels),
+            replicates=args.replicates,
+            seed=args.seed,
+            label_source=args.label_source,
         )
         _write_json(args.out, result)
     elif args.command == "write-record":
