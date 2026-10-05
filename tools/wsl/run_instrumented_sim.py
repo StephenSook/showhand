@@ -86,6 +86,7 @@ def main() -> None:
     parser.add_argument("--render", required=True)
     parser.add_argument("--render-timestamps", required=True)
     parser.add_argument("--render-meta", required=True)
+    parser.add_argument("--release-file", required=True)
     parser.add_argument("--interface", default="eth0")
     parser.add_argument("--foot-half-length-m", default=0.12, type=float)
     parser.add_argument("--foot-half-width-m", default=0.06, type=float)
@@ -122,8 +123,10 @@ def main() -> None:
     env = simulator.sim_env
     if env.elastic_band is None:
         raise RuntimeError("stock simulator did not create the expected elastic band")
-    env.elastic_band.enable = False
-    print("SHOWHAND_ELASTIC_BAND=disabled")
+    release_file = Path(args.release_file)
+    if release_file.exists():
+        raise RuntimeError(f"release marker already exists: {release_file}")
+    print("SHOWHAND_ELASTIC_BAND=startup_enabled")
     camera.trackbodyid = env.root_body_id
     model = env.mj_model
     data = env.mj_data
@@ -185,10 +188,15 @@ def main() -> None:
         "previous_right": None,
         "first_render_ns": None,
         "last_render_ns": None,
+        "elastic_release_ns": None,
     }
 
     def record_then_check_fall() -> None:
         stamp = time.monotonic_ns()
+        if state["elastic_release_ns"] is None and release_file.exists():
+            env.elastic_band.enable = False
+            state["elastic_release_ns"] = stamp
+            print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={stamp}")
         root = data.qpos[:7].copy()
         joints = data.qpos[env.body_joint_index + env.qpos_offset - 1].copy()
         com = data.subtree_com[env.root_body_id].copy()
@@ -281,7 +289,8 @@ def main() -> None:
             "last_render_monotonic_ns": state["last_render_ns"],
             "telemetry_steps": state["step"],
             "sim_frequency_hz": 1.0 / env.sim_dt,
-            "elastic_band_enabled": False,
+            "elastic_band_startup_enabled": True,
+            "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
             "fall_condition": "root_height_m < 0.2 before stock reset",
             "balance_proxy": (
                 "COM projection inside convex hull of oriented contact-foot rectangles"
