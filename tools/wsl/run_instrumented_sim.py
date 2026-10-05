@@ -8,7 +8,6 @@ import csv
 import json
 import math
 import time
-from contextlib import ExitStack
 from pathlib import Path
 
 import numpy as np
@@ -142,12 +141,7 @@ def main() -> None:
         "fall_event",
         *[f"q_{index}" for index in range(29)],
     ]
-    handles = ExitStack()
-    telemetry_handle = handles.enter_context(
-        Path(args.telemetry).open("w", newline="", encoding="utf-8")  # noqa: SIM115
-    )
-    telemetry_writer = csv.DictWriter(telemetry_handle, fieldnames=fields)
-    telemetry_writer.writeheader()
+    telemetry_rows: list[dict[str, float | int]] = []
     old_check_fall = env.check_fall
     state = {
         "step": 0,
@@ -211,7 +205,7 @@ def main() -> None:
             "fall_event": int(fall_event),
             **{f"q_{index}": float(value) for index, value in enumerate(joints)},
         }
-        telemetry_writer.writerow(row)
+        telemetry_rows.append(row)
         state["step"] += 1
         if fall_event:
             state["previous_left"] = None
@@ -226,7 +220,10 @@ def main() -> None:
     try:
         simulator.start()
     finally:
-        handles.close()
+        with Path(args.telemetry).open("w", newline="", encoding="utf-8") as handle:
+            telemetry_writer = csv.DictWriter(handle, fieldnames=fields)
+            telemetry_writer.writeheader()
+            telemetry_writer.writerows(telemetry_rows)
         metadata = {
             "schema_version": 1,
             "telemetry_steps": state["step"],
