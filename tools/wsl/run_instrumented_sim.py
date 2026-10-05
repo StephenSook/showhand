@@ -116,7 +116,7 @@ def main() -> None:
         offscreen=True,
         enable_image_publish=False,
         camera_configs={
-            "observer": {"height": 720, "width": 1280, "params": camera},
+            "observer": {"height": 480, "width": 640, "params": camera},
         },
     )
     env = simulator.sim_env
@@ -171,7 +171,7 @@ def main() -> None:
         args.render,
         cv2.VideoWriter_fourcc(*"mp4v"),
         30.0,
-        (1280, 720),
+        (640, 480),
     )
     if not video.isOpened():
         raise RuntimeError("OpenCV could not open the observer MP4 writer")
