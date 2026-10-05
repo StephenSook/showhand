@@ -68,7 +68,9 @@ def _inside_convex(point: np.ndarray, polygon: list[np.ndarray], tolerance: floa
     signs = []
     for index, first in enumerate(polygon):
         second = polygon[(index + 1) % len(polygon)]
-        signs.append(float(np.cross(second - first, point - first)))
+        edge = second - first
+        offset = point - first
+        signs.append(float(edge[0] * offset[1] - edge[1] * offset[0]))
     return all(value >= -tolerance for value in signs) or all(value <= tolerance for value in signs)
 
 
@@ -118,6 +120,10 @@ def main() -> None:
         },
     )
     env = simulator.sim_env
+    if env.elastic_band is None:
+        raise RuntimeError("stock simulator did not create the expected elastic band")
+    env.elastic_band.enable = False
+    print("SHOWHAND_ELASTIC_BAND=disabled")
     camera.trackbodyid = env.root_body_id
     model = env.mj_model
     data = env.mj_data
@@ -275,6 +281,7 @@ def main() -> None:
             "last_render_monotonic_ns": state["last_render_ns"],
             "telemetry_steps": state["step"],
             "sim_frequency_hz": 1.0 / env.sim_dt,
+            "elastic_band_enabled": False,
             "fall_condition": "root_height_m < 0.2 before stock reset",
             "balance_proxy": (
                 "COM projection inside convex hull of oriented contact-foot rectangles"
