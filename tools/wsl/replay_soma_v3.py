@@ -14,6 +14,15 @@ import numpy as np
 import torch
 
 
+def wait_until(deadline_s: float, spin_margin_s: float = 0.003) -> None:
+    """Sleep most of an interval, then use a bounded spin for the final margin."""
+    remaining_s = deadline_s - time.monotonic()
+    if remaining_s > spin_margin_s:
+        time.sleep(remaining_s - spin_margin_s)
+    while time.monotonic() < deadline_s:
+        pass
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pt", required=True)
@@ -96,9 +105,7 @@ def main() -> None:
     try:
         for output_index in range(output_frames):
             deadline = start_clock + output_index / args.output_fps
-            sleep_s = deadline - time.monotonic()
-            if sleep_s > 0:
-                time.sleep(sleep_s)
+            wait_until(deadline)
             publish_ns = time.monotonic_ns()
             jitter_s = publish_ns / 1_000_000_000 - deadline
             if jitter_s > args.max_jitter_s:
