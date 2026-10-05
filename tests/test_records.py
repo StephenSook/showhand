@@ -74,6 +74,7 @@ def test_take_record_written(tmp_path: Path) -> None:
     write_take_record(output, _record(tmp_path))
     assert "PLUMBING TEST" in output.read_text(encoding="utf-8")
     assert "artifact_sha256" in output.read_text(encoding="utf-8")
+    assert b"\r\n" not in output.read_bytes()
 
 
 def test_take_record_refuses_unlabeled_stock_output(tmp_path: Path) -> None:

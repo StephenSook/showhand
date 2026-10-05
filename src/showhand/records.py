@@ -37,7 +37,8 @@ def write_take_record(path: str | Path, record: dict[str, Any]) -> None:
     validate_take_record(materialized)
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(materialized, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with output.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(materialized, indent=2, sort_keys=True) + "\n")
 
 
 def validate_take_record(record: dict[str, Any]) -> None:
