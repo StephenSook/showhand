@@ -10,6 +10,36 @@ import subprocess
 from pathlib import Path
 
 
+def build_ffmpeg_command(
+    human: str,
+    robot: str,
+    center_s: float,
+    robot_s: float,
+    destination: Path,
+) -> list[str]:
+    """Build a side-by-side frame command with a shared output height."""
+    return [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-ss",
+        f"{center_s:.6f}",
+        "-i",
+        human,
+        "-ss",
+        f"{robot_s:.6f}",
+        "-i",
+        robot,
+        "-filter_complex",
+        "[0:v]scale=-2:480,setsar=1[h];[1:v]scale=-2:480,setsar=1[r];[h][r]hstack=inputs=2",
+        "-frames:v",
+        "1",
+        str(destination),
+    ]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--human", required=True)
@@ -41,26 +71,9 @@ def main() -> None:
         )
         robot_s = frame_index / 30.0
         destination = output / f"window-{index:03d}.jpg"
-        command = [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-ss",
-            f"{center_s:.6f}",
-            "-i",
-            args.human,
-            "-ss",
-            f"{robot_s:.6f}",
-            "-i",
-            args.robot,
-            "-filter_complex",
-            "[0:v]scale=640:-2,setsar=1[h];[1:v]scale=640:-2,setsar=1[r];[h][r]hstack=inputs=2",
-            "-frames:v",
-            "1",
-            str(destination),
-        ]
+        command = build_ffmpeg_command(
+            args.human, args.robot, center_s, robot_s, destination
+        )
         subprocess.run(command, check=True)
         manifest.append(
             {
