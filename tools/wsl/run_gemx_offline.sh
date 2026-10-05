@@ -23,12 +23,14 @@ export CUDA_MODULE_LOADING=LAZY
 
 echo "GEMX_MODEL=nvidia/GEM-X"
 echo "GEMX_COMMIT=$(git rev-parse HEAD)"
+echo "GEMX_MODE=official_no_imgfeat"
 echo "GEMX_START=$(date --iso-8601=ns)"
 start_ns=$(date +%s%N)
 set +e
 python scripts/demo/demo_soma_onnx.py \
   --video "$clip" \
   --output_root "$output_root" \
+  --no-imgfeat \
   --retarget
 status=$?
 set -e
