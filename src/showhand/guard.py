@@ -64,6 +64,16 @@ def guard_fusion(
     unknown_refs = set(refs).difference(evidence)
     if unknown_refs:
         raise GroundingError(f"unknown evidence refs: {sorted(unknown_refs)}")
+    overall = metrics_by_ref.get("metrics:overall")
+    if not overall:
+        raise GroundingError("metrics:overall evidence is required")
+    mandatory_negative = overall.get("pass") is False or any(
+        verdict.get("match") is False for verdict in visual_by_ref.values()
+    )
+    if output["decision"] == "accept" and mandatory_negative:
+        raise GroundingError("accept contradicts mandatory negative evidence")
+    if output["decision"] == "accept" and any(_is_negative(evidence[ref]) for ref in refs):
+        raise GroundingError("accept cannot cite negative evidence")
 
     for window in windows:
         if set(window) != {"start_s", "end_s", "reason"}:
@@ -75,12 +85,13 @@ def guard_fusion(
         supporting = [
             evidence[ref]
             for ref in refs
-            if _overlaps(start_s, end_s, evidence[ref]["start_s"], evidence[ref]["end_s"])
+            if ref != "metrics:overall"
+            and _same_interval(start_s, end_s, evidence[ref]["start_s"], evidence[ref]["end_s"])
             and _is_negative(evidence[ref])
         ]
         if not supporting:
             raise GroundingError(
-                f"re-show window [{start_s}, {end_s}] has no cited negative evidence"
+                f"re-show window [{start_s}, {end_s}] must exactly match cited negative evidence"
             )
         allowed_codes = {code for item in supporting for code in item.get("reason_codes", [])}
         reason_text = str(window["reason"])
@@ -102,5 +113,5 @@ def _is_negative(evidence: dict[str, Any]) -> bool:
     return False
 
 
-def _overlaps(a_start: float, a_end: float, b_start: float, b_end: float) -> bool:
-    return max(a_start, float(b_start)) < min(a_end, float(b_end))
+def _same_interval(a_start: float, a_end: float, b_start: float, b_end: float) -> bool:
+    return abs(a_start - float(b_start)) <= 1e-6 and abs(a_end - float(b_end)) <= 1e-6

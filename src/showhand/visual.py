@@ -9,7 +9,6 @@ from typing import Any
 VISUAL_REASON_CODES = {
     "upper_body_pose",
     "lower_body_pose",
-    "timing",
     "orientation",
     "occlusion",
     "insufficient_view",
@@ -17,7 +16,8 @@ VISUAL_REASON_CODES = {
 
 FIXED_QUESTION = (
     "The left image is the human demonstration and the right image is the simulated Unitree G1. "
-    "For this one-second window, does the robot pose match the human pose? Judge pose and timing, "
+    "At the center of this one-second window, does the robot pose match the human pose? "
+    "Judge pose, "
     "not appearance. Return only the requested JSON object."
 )
 

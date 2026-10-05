@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import time
@@ -14,19 +15,20 @@ from qwen_vl_utils import process_vision_info
 from transformers import AutoModelForMultimodalLM, AutoProcessor
 
 MODEL_ID = "nvidia/Cosmos-Reason1-7B"
+MODEL_REVISION = "375e24000b24baed78f4618d3dd779e47cd96323"
+CONTAINER_IMAGE_DIGEST = "sha256:eee11b3b3872a8c838e35ef48f08b2d5def2080902c7f666831310ca1a0ef2be"
 REASON_CODES = {
     "upper_body_pose",
     "lower_body_pose",
-    "timing",
     "orientation",
     "occlusion",
     "insufficient_view",
 }
 FIXED_QUESTION = (
     "The left image is the human demonstration and the right image is the simulated Unitree G1. "
-    "For this one-second window, does the robot's pose match the human's? Judge pose and timing, "
+    "At the center of this one-second window, does the robot's pose match the human's? Judge pose, "
     "not appearance. Return one JSON object with exactly these keys: match (boolean), "
-    "reason_codes (an array using only upper_body_pose, lower_body_pose, timing, orientation, "
+    "reason_codes (an array using only upper_body_pose, lower_body_pose, orientation, "
     "occlusion, insufficient_view), and summary (a short string). A match must have an empty "
     "reason_codes array. A mismatch must have at least one reason code."
 )
@@ -62,6 +64,7 @@ def _parse_object(raw: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--take-id", required=True)
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--max-new-tokens", default=4096, type=int)
@@ -74,9 +77,10 @@ def main() -> None:
         raise ValueError("visual manifest contains no windows")
 
     load_started = time.perf_counter()
-    processor = AutoProcessor.from_pretrained(MODEL_ID)
+    processor = AutoProcessor.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
     model = AutoModelForMultimodalLM.from_pretrained(
         MODEL_ID,
+        revision=MODEL_REVISION,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         low_cpu_mem_usage=True,
@@ -147,7 +151,11 @@ def main() -> None:
 
     output = {
         "schema_version": 1,
+        "take_id": args.take_id,
+        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
         "model_id": MODEL_ID,
+        "model_revision": MODEL_REVISION,
+        "container_image_digest": CONTAINER_IMAGE_DIGEST,
         "precision": "bfloat16",
         "decoding": {"do_sample": False, "max_new_tokens": args.max_new_tokens},
         "fixed_question": FIXED_QUESTION,

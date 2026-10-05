@@ -3,12 +3,18 @@ import pytest
 from showhand.guard import GroundingError, guard_fusion
 
 METRIC = {
+    "metrics:overall": {
+        "start_s": 0.0,
+        "end_s": 1.0,
+        "pass": False,
+        "reason_codes": ["root_tilt_deg"],
+    },
     "metrics:second:0": {
         "start_s": 0.0,
         "end_s": 1.0,
         "pass": False,
         "reason_codes": ["root_tilt_deg"],
-    }
+    },
 }
 VISUAL = {
     "visual:second:0": {
@@ -29,6 +35,28 @@ def test_guard_accepts_grounded_reshow() -> None:
         "evidence_refs": ["metrics:second:0"],
     }
     assert guard_fusion(output, METRIC, VISUAL, 1.0) == output
+
+
+def test_guard_rejects_accept_when_overall_metrics_fail() -> None:
+    output = {
+        "decision": "accept",
+        "reshow_windows": [],
+        "evidence_refs": ["metrics:overall"],
+    }
+    with pytest.raises(GroundingError, match="mandatory negative"):
+        guard_fusion(output, METRIC, {}, 1.0)
+
+
+def test_guard_rejects_overbroad_window() -> None:
+    output = {
+        "decision": "reshow",
+        "reshow_windows": [
+            {"start_s": 0.0, "end_s": 2.0, "reason": "root_tilt_deg in cited evidence"}
+        ],
+        "evidence_refs": ["metrics:second:0"],
+    }
+    with pytest.raises(GroundingError, match="exactly match"):
+        guard_fusion(output, METRIC, VISUAL, 2.0)
 
 
 @pytest.mark.parametrize(

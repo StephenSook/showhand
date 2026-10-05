@@ -20,8 +20,9 @@ SYSTEM = (
     "Return accept or reshow. Every re-show reason must exactly equal '<reason_code> in cited "
     "evidence', using a reason code from cited negative evidence, such as "
     "tracking_mean_abs_error_rad, root_tilt_deg, foot_slip, fall, "
-    "out_of_balance, upper_body_pose, lower_body_pose, timing, orientation, occlusion, or "
-    "insufficient_view. Do not invent measurements or uncited seconds."
+    "out_of_balance, upper_body_pose, lower_body_pose, orientation, occlusion, or "
+    "insufficient_view. Each re-show window must exactly match a cited negative one-second "
+    "evidence interval. Do not invent measurements or uncited seconds."
 )
 
 
@@ -36,6 +37,11 @@ def request_fusion(
     if not key:
         raise RuntimeError("NEBIUS_API_KEY is missing")
     evidence_metrics = {item["evidence_ref"]: item for item in metrics["per_second"]}
+    overall_evidence = {
+        **metrics["overall"],
+        "evidence_ref": "metrics:overall",
+    }
+    evidence_metrics["metrics:overall"] = overall_evidence
     evidence_visual = {item["evidence_ref"]: item for item in visual_verdicts}
     body = {
         "model": MODEL,
@@ -48,6 +54,7 @@ def request_fusion(
                 "content": json.dumps(
                     {
                         "duration_s": metrics["duration_s"],
+                        "overall_metrics": overall_evidence,
                         "metric_windows": metrics["per_second"],
                         "visual_windows": visual_verdicts,
                     },
@@ -85,9 +92,14 @@ def request_fusion(
         evidence_visual,
         float(metrics["duration_s"]),
     )
-    usage = raw.get("usage") or {}
-    prompt_tokens = int(usage.get("prompt_tokens", 0))
-    completion_tokens = int(usage.get("completion_tokens", 0))
+    usage = raw.get("usage")
+    if not isinstance(usage, dict) or not {
+        "prompt_tokens",
+        "completion_tokens",
+    }.issubset(usage):
+        raise RuntimeError("Token Factory response is missing token usage; cost is unknown")
+    prompt_tokens = int(usage["prompt_tokens"])
+    completion_tokens = int(usage["completion_tokens"])
     cost_usd = (
         prompt_tokens / 1_000_000 * INPUT_USD_PER_M
         + completion_tokens / 1_000_000 * OUTPUT_USD_PER_M
