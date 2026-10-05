@@ -25,11 +25,13 @@ echo "GEMX_MODEL=nvidia/GEM-X"
 echo "GEMX_COMMIT=$(git rev-parse HEAD)"
 echo "GEMX_START=$(date --iso-8601=ns)"
 start_ns=$(date +%s%N)
+set +e
 python scripts/demo/demo_soma_onnx.py \
   --video "$clip" \
   --output_root "$output_root" \
   --retarget
 status=$?
+set -e
 end_ns=$(date +%s%N)
 echo "GEMX_EXIT=$status"
 echo "GEMX_WALL_S=$(python -c "print(($end_ns-$start_ns)/1e9)")"
