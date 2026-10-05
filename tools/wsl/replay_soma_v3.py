@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 import sys
 import time
 from pathlib import Path
@@ -20,6 +21,9 @@ def main() -> None:
     parser.add_argument("--output-fps", default=50.0, type=float)
     parser.add_argument("--smpl-output", required=True)
     parser.add_argument("--timing-output", required=True)
+    parser.add_argument("--handshake-socket", required=True)
+    parser.add_argument("--handshake-timeout-s", default=5.0, type=float)
+    parser.add_argument("--max-jitter-s", default=0.01, type=float)
     parser.add_argument("--port", default=5556, type=int)
     args = parser.parse_args()
     if args.source_fps <= 0 or args.output_fps <= 0:
@@ -71,7 +75,13 @@ def main() -> None:
         f"CONVERSION_WALL_S={conversion_wall_s:.6f}",
         flush=True,
     )
-    input("REPLAY_READY press ENTER to start the 50 Hz clock\n")
+    handshake = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    handshake.settimeout(args.handshake_timeout_s)
+    handshake.connect(args.handshake_socket)
+    handshake.sendall(b"release\n")
+    acknowledgement = json.loads(handshake.makefile("r", encoding="utf-8").readline())
+    handshake.close()
+    release_ns = int(acknowledgement["release_monotonic_ns"])
 
     saved: dict[str, list[np.ndarray]] = {
         "smpl_joints": [],
@@ -80,10 +90,23 @@ def main() -> None:
         "wrists": [],
     }
     source_indices: list[int] = []
+    publish_monotonic_ns: list[int] = []
+    publish_jitter_s: list[float] = []
     start_ns = time.monotonic_ns()
-    next_deadline = time.monotonic()
+    start_clock = start_ns / 1_000_000_000
     try:
         for output_index in range(output_frames):
+            deadline = start_clock + output_index / args.output_fps
+            sleep_s = deadline - time.monotonic()
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+            publish_ns = time.monotonic_ns()
+            jitter_s = publish_ns / 1_000_000_000 - deadline
+            if jitter_s > args.max_jitter_s:
+                raise RuntimeError(
+                    f"50 Hz publish jitter {jitter_s:.6f}s exceeds {args.max_jitter_s:.6f}s "
+                    f"at frame {output_index}"
+                )
             source_index = min(
                 int((output_index / args.output_fps) * args.source_fps),
                 source_frames - 1,
@@ -93,10 +116,8 @@ def main() -> None:
             for key in saved:
                 saved[key].append(converted[key].copy())
             source_indices.append(source_index)
-            next_deadline += 1.0 / args.output_fps
-            sleep_s = next_deadline - time.monotonic()
-            if sleep_s > 0:
-                time.sleep(sleep_s)
+            publish_monotonic_ns.append(publish_ns)
+            publish_jitter_s.append(jitter_s)
     finally:
         end_ns = time.monotonic_ns()
         publisher.close()
@@ -106,6 +127,8 @@ def main() -> None:
     np.savez_compressed(
         smpl_output,
         source_indices=np.asarray(source_indices, dtype=np.int32),
+        publish_monotonic_ns=np.asarray(publish_monotonic_ns, dtype=np.int64),
+        publish_jitter_s=np.asarray(publish_jitter_s, dtype=np.float64),
         **{key: np.concatenate(value, axis=0) for key, value in saved.items()},
     )
     timing = {
@@ -117,10 +140,16 @@ def main() -> None:
         "output_frames": output_frames,
         "output_fps": args.output_fps,
         "conversion_wall_s": conversion_wall_s,
+        "elastic_band_release_monotonic_ns": release_ns,
+        "release_to_replay_start_s": (start_ns - release_ns) / 1_000_000_000,
         "resampling": "zero_order_hold_by_source_timestamp",
         "replay_start_monotonic_ns": start_ns,
         "replay_end_monotonic_ns": end_ns,
         "wall_duration_s": (end_ns - start_ns) / 1_000_000_000,
+        "publish_jitter_max_s": max(publish_jitter_s, default=0.0),
+        "publish_jitter_p95_s": float(np.percentile(publish_jitter_s, 95)),
+        "deadline_misses": sum(jitter > 1.0 / args.output_fps for jitter in publish_jitter_s),
+        "max_allowed_jitter_s": args.max_jitter_s,
     }
     timing_output = Path(args.timing_output)
     timing_output.parent.mkdir(parents=True, exist_ok=True)

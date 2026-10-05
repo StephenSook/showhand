@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import math
+import socket
 import time
 from pathlib import Path
 
@@ -81,7 +82,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--telemetry", required=True)
     parser.add_argument("--sim-meta", required=True)
-    parser.add_argument("--release-file", required=True)
+    parser.add_argument("--handshake-socket", required=True)
     parser.add_argument("--interface", default="eth0")
     parser.add_argument("--foot-half-length-m", default=0.12, type=float)
     parser.add_argument("--foot-half-width-m", default=0.06, type=float)
@@ -108,9 +109,14 @@ def main() -> None:
     env = simulator.sim_env
     if env.elastic_band is None:
         raise RuntimeError("stock simulator did not create the expected elastic band")
-    release_file = Path(args.release_file)
-    if release_file.exists():
-        raise RuntimeError(f"release marker already exists: {release_file}")
+    handshake_path = Path(args.handshake_socket)
+    handshake_path.parent.mkdir(parents=True, exist_ok=True)
+    handshake_path.unlink(missing_ok=True)
+    handshake = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    handshake.bind(str(handshake_path))
+    handshake.listen(1)
+    handshake.setblocking(False)
+    print(f"SHOWHAND_HANDSHAKE_READY={handshake_path}")
     print("SHOWHAND_ELASTIC_BAND=startup_enabled")
     model = env.mj_model
     data = env.mj_data
@@ -148,14 +154,30 @@ def main() -> None:
         "previous_left": None,
         "previous_right": None,
         "elastic_release_ns": None,
+        "was_below_fall_height": False,
     }
 
     def record_then_check_fall() -> None:
         stamp = time.monotonic_ns()
-        if state["elastic_release_ns"] is None and release_file.exists():
-            env.elastic_band.enable = False
-            state["elastic_release_ns"] = stamp
-            print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={stamp}")
+        if state["elastic_release_ns"] is None:
+            try:
+                connection, _ = handshake.accept()
+            except BlockingIOError:
+                connection = None
+            if connection is not None:
+                with connection:
+                    request = connection.recv(64)
+                    if request != b"release\n":
+                        raise RuntimeError(f"invalid simulator handshake request: {request!r}")
+                    env.elastic_band.enable = False
+                    state["elastic_release_ns"] = stamp
+                    acknowledgement = {
+                        "release_monotonic_ns": stamp,
+                        "release_step_index": state["step"],
+                        "release_sim_time_s": float(data.time),
+                    }
+                    connection.sendall((json.dumps(acknowledgement) + "\n").encode())
+                    print(f"SHOWHAND_ELASTIC_BAND=released monotonic_ns={stamp}")
         root = data.qpos[:7].copy()
         joints = data.qpos[env.body_joint_index + env.qpos_offset - 1].copy()
         com = data.subtree_com[env.root_body_id].copy()
@@ -166,12 +188,20 @@ def main() -> None:
         left_slip = 0.0
         right_slip = 0.0
         if left_contact and state["previous_left"] is not None:
+            previous_position, previous_sim_time = state["previous_left"]
+            elapsed_sim_s = float(data.time) - previous_sim_time
+            if elapsed_sim_s <= 0:
+                raise RuntimeError("non-positive simulator time delta for left foot slip")
             left_slip = float(
-                np.linalg.norm((left_position - state["previous_left"])[:2]) / env.sim_dt
+                np.linalg.norm((left_position - previous_position)[:2]) / elapsed_sim_s
             )
         if right_contact and state["previous_right"] is not None:
+            previous_position, previous_sim_time = state["previous_right"]
+            elapsed_sim_s = float(data.time) - previous_sim_time
+            if elapsed_sim_s <= 0:
+                raise RuntimeError("non-positive simulator time delta for right foot slip")
             right_slip = float(
-                np.linalg.norm((right_position - state["previous_right"])[:2]) / env.sim_dt
+                np.linalg.norm((right_position - previous_position)[:2]) / elapsed_sim_s
             )
         support = []
         half_length = args.foot_half_length_m + args.support_margin_m
@@ -181,7 +211,8 @@ def main() -> None:
         if right_contact:
             support.extend(_foot_corners(data, right_body, half_length, half_width))
         out_of_balance = not _inside_convex(com[:2], _convex_hull(support))
-        fall_event = bool(root[2] < 0.2)
+        below_fall_height = bool(root[2] < 0.2)
+        fall_event = below_fall_height and not state["was_below_fall_height"]
         row = {
             "step_index": state["step"],
             "monotonic_ns": stamp,
@@ -207,12 +238,13 @@ def main() -> None:
         }
         telemetry_rows.append(row)
         state["step"] += 1
-        if fall_event:
-            state["previous_left"] = None
-            state["previous_right"] = None
-        else:
-            state["previous_left"] = left_position
-            state["previous_right"] = right_position
+        state["previous_left"] = (
+            (left_position, float(data.time)) if left_contact and not below_fall_height else None
+        )
+        state["previous_right"] = (
+            (right_position, float(data.time)) if right_contact and not below_fall_height else None
+        )
+        state["was_below_fall_height"] = below_fall_height
         old_check_fall()
 
     env.check_fall = record_then_check_fall
@@ -220,6 +252,8 @@ def main() -> None:
     try:
         simulator.start()
     finally:
+        handshake.close()
+        handshake_path.unlink(missing_ok=True)
         with Path(args.telemetry).open("w", newline="", encoding="utf-8") as handle:
             telemetry_writer = csv.DictWriter(handle, fieldnames=fields)
             telemetry_writer.writeheader()
@@ -232,7 +266,11 @@ def main() -> None:
             "offscreen_render_during_control": False,
             "elastic_band_startup_enabled": True,
             "elastic_band_release_monotonic_ns": state["elastic_release_ns"],
-            "fall_condition": "root_height_m < 0.2 before stock reset",
+            "fall_condition": "transition into root_height_m < 0.2 before stock reset",
+            "foot_slip_definition": (
+                "horizontal contact-foot displacement divided by measured simulator time; "
+                "both adjacent samples must be in contact"
+            ),
             "balance_proxy": (
                 "COM projection inside convex hull of oriented contact-foot rectangles"
             ),

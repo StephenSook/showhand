@@ -10,7 +10,7 @@ from showhand.fusion import request_fusion
 from showhand.metrics import compute_take_metrics, load_retargeted_motion, load_sim_telemetry
 from showhand.records import write_take_record
 from showhand.residual import load_rows, paired_agreement_residual
-from showhand.thresholds import load_thresholds
+from showhand.thresholds import load_thresholds, threshold_sha256
 from showhand.visual import load_visual_results
 
 
@@ -22,8 +22,8 @@ def main() -> None:
     metrics_parser.add_argument("--retarget-csv", required=True)
     metrics_parser.add_argument("--source-fps", required=True, type=float)
     metrics_parser.add_argument("--telemetry", required=True)
-    metrics_parser.add_argument("--replay-start-ns", required=True, type=int)
-    metrics_parser.add_argument("--replay-end-ns", required=True, type=int)
+    metrics_parser.add_argument("--replay-timing", required=True)
+    metrics_parser.add_argument("--sim-meta", required=True)
     metrics_parser.add_argument("--thresholds", default="config/thresholds.yaml")
     metrics_parser.add_argument("--out", required=True)
 
@@ -45,9 +45,29 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "metrics":
         thresholds = load_thresholds(args.thresholds)
+        timing = _read_json(args.replay_timing)
+        sim_meta = _read_json(args.sim_meta)
+        replay_start_ns = int(timing["replay_start_monotonic_ns"])
+        replay_end_ns = int(timing["replay_end_monotonic_ns"])
         target = load_retargeted_motion(args.retarget_csv, args.source_fps)
-        telemetry = load_sim_telemetry(args.telemetry, args.replay_start_ns, args.replay_end_ns)
-        result = compute_take_metrics(target, telemetry, args.replay_start_ns, thresholds)
+        telemetry = load_sim_telemetry(
+            args.telemetry,
+            replay_start_ns,
+            replay_end_ns,
+            int(sim_meta["elastic_band_release_monotonic_ns"]),
+        )
+        result = compute_take_metrics(target, telemetry, replay_start_ns, thresholds)
+        result["threshold_sha256"] = threshold_sha256(args.thresholds)
+        result["timeline"] = {
+            "interpretation": (
+                "target publish wall time compared with measured simulator state wall time; "
+                "SONIC transport and controller latency remain inside tracking error"
+            ),
+            "release_before_replay": True,
+            "replay_start_monotonic_ns": replay_start_ns,
+            "replay_end_monotonic_ns": replay_end_ns,
+            "elastic_band_release_monotonic_ns": int(sim_meta["elastic_band_release_monotonic_ns"]),
+        }
         _write_json(args.out, result)
     elif args.command == "fusion":
         metrics = _read_json(args.metrics)

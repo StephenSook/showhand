@@ -59,7 +59,9 @@ def test_metrics_are_deterministic_and_flag_measured_failures(tmp_path: Path) ->
     _write_target(target_path)
     _write_telemetry(telemetry_path, bad=True)
     target = load_retargeted_motion(target_path, fps=2.0)
-    telemetry = load_sim_telemetry(telemetry_path, 1_000_000_000, 2_000_000_000)
+    telemetry = load_sim_telemetry(
+        telemetry_path, 1_000_000_000, 2_000_000_000, 999_000_000, max_gap_s=0.5
+    )
     thresholds = load_thresholds("config/thresholds.yaml")
     first = compute_take_metrics(target, telemetry, 1_000_000_000, thresholds)
     second = compute_take_metrics(target, telemetry, 1_000_000_000, thresholds)
@@ -74,8 +76,10 @@ def test_metrics_refuse_empty_replay_interval(tmp_path: Path) -> None:
     telemetry_path = tmp_path / "telemetry.csv"
     _write_target(target_path)
     _write_telemetry(telemetry_path)
-    with pytest.raises(MetricsInputError, match="no telemetry"):
-        load_sim_telemetry(telemetry_path, 3_000_000_000, 4_000_000_000)
+    with pytest.raises(MetricsInputError, match="cover the complete replay interval"):
+        load_sim_telemetry(
+            telemetry_path, 3_000_000_000, 4_000_000_000, 2_000_000_000, max_gap_s=0.5
+        )
 
 
 def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None:
@@ -84,7 +88,9 @@ def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None
     _write_target(target_path)
     _write_telemetry(telemetry_path)
     target = load_retargeted_motion(target_path, fps=2.0)
-    telemetry = load_sim_telemetry(telemetry_path, 1_000_000_000, 2_000_000_000)
+    telemetry = load_sim_telemetry(
+        telemetry_path, 1_000_000_000, 2_000_000_000, 999_000_000, max_gap_s=0.5
+    )
     late = dict(telemetry[-1])
     late.update(
         {
@@ -102,6 +108,41 @@ def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None
 
     assert result["telemetry_samples"] == 3
     assert result["overall"]["pass"] is True
+
+
+def test_metrics_refuse_support_release_after_replay_start(tmp_path: Path) -> None:
+    telemetry_path = tmp_path / "telemetry.csv"
+    _write_telemetry(telemetry_path)
+    with pytest.raises(MetricsInputError, match="support was released after"):
+        load_sim_telemetry(
+            telemetry_path,
+            1_000_000_000,
+            2_000_000_000,
+            1_000_000_001,
+            max_gap_s=0.5,
+        )
+
+
+def test_tracking_p95_is_flattened_across_joint_time_errors(tmp_path: Path) -> None:
+    target_path = tmp_path / "target.csv"
+    telemetry_path = tmp_path / "telemetry.csv"
+    _write_target(target_path)
+    _write_telemetry(telemetry_path)
+    rows = list(csv.DictReader(telemetry_path.open(newline="", encoding="utf-8")))
+    rows[1]["q_0"] = "1.0"
+    rows[1]["q_1"] = "1.0"
+    with telemetry_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+    target = load_retargeted_motion(target_path, fps=2.0)
+    telemetry = load_sim_telemetry(
+        telemetry_path, 1_000_000_000, 2_000_000_000, 999_000_000, max_gap_s=0.5
+    )
+    result = compute_take_metrics(
+        target, telemetry, 1_000_000_000, load_thresholds("config/thresholds.yaml")
+    )
+    assert result["overall"]["tracking_p95_abs_error_rad"] == 0.0
 
 
 def test_retargeted_joint_order_is_enforced(tmp_path: Path) -> None:

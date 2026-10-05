@@ -88,6 +88,9 @@ def load_sim_telemetry(
     path: str | Path,
     replay_start_monotonic_ns: int,
     replay_end_monotonic_ns: int,
+    release_monotonic_ns: int,
+    *,
+    max_gap_s: float = 0.05,
 ) -> list[dict[str, float | int]]:
     if replay_end_monotonic_ns <= replay_start_monotonic_ns:
         raise MetricsInputError("replay end must be after replay start")
@@ -109,15 +112,39 @@ def load_sim_telemetry(
         missing = required.difference(reader.fieldnames)
         if missing:
             raise MetricsInputError(f"telemetry missing fields: {', '.join(sorted(missing))}")
-        rows = []
+        all_rows = []
         for raw in reader:
             stamp = int(raw["monotonic_ns"])
-            if replay_start_monotonic_ns <= stamp <= replay_end_monotonic_ns:
-                row = {name: float(raw[name]) for name in required if name != "monotonic_ns"}
-                row["monotonic_ns"] = stamp
-                rows.append(row)
+            row = {name: float(raw[name]) for name in required if name != "monotonic_ns"}
+            row["monotonic_ns"] = stamp
+            all_rows.append(row)
+    if not all_rows:
+        raise MetricsInputError("telemetry CSV has no samples")
+    stamps = np.asarray([int(row["monotonic_ns"]) for row in all_rows], dtype=np.int64)
+    if np.any(np.diff(stamps) <= 0):
+        raise MetricsInputError("telemetry monotonic_ns values must be strictly increasing")
+    if int(stamps[0]) > replay_start_monotonic_ns or int(stamps[-1]) < replay_end_monotonic_ns:
+        raise MetricsInputError("telemetry does not cover the complete replay interval")
+    if release_monotonic_ns > replay_start_monotonic_ns:
+        raise MetricsInputError("elastic support was released after replay started")
+    rows = [
+        row
+        for row in all_rows
+        if replay_start_monotonic_ns <= int(row["monotonic_ns"]) <= replay_end_monotonic_ns
+    ]
     if not rows:
         raise MetricsInputError("no telemetry samples fall inside the replay interval")
+    selected_stamps = np.asarray([int(row["monotonic_ns"]) for row in rows], dtype=np.int64)
+    edge_gaps_s = np.asarray(
+        [
+            (selected_stamps[0] - replay_start_monotonic_ns) / 1_000_000_000,
+            (replay_end_monotonic_ns - selected_stamps[-1]) / 1_000_000_000,
+        ]
+    )
+    interior_gaps_s = np.diff(selected_stamps) / 1_000_000_000
+    observed_max_gap_s = float(max(edge_gaps_s.max(), interior_gaps_s.max(initial=0.0)))
+    if observed_max_gap_s > max_gap_s:
+        raise MetricsInputError(f"telemetry gap {observed_max_gap_s:.6f}s exceeds {max_gap_s:.6f}s")
     return rows
 
 
@@ -142,7 +169,6 @@ def compute_take_metrics(
     target_angles = _interpolate_target(target, elapsed_s)
     abs_error = np.abs(_wrapped_angle_delta(measured, target_angles))
     sample_error_mean = abs_error.mean(axis=1)
-    sample_error_p95 = np.percentile(abs_error, 95, axis=1)
     root_height = np.asarray([row["root_height_m"] for row in telemetry])
     root_tilt = np.asarray([row["root_tilt_deg"] for row in telemetry])
     foot_slip = np.maximum(
@@ -167,7 +193,7 @@ def compute_take_metrics(
             start_s,
             end_s,
             sample_error_mean[mask],
-            sample_error_p95[mask],
+            abs_error[mask],
             root_height[mask],
             root_tilt[mask],
             foot_slip[mask],
@@ -184,7 +210,7 @@ def compute_take_metrics(
         0.0,
         duration_s,
         sample_error_mean,
-        sample_error_p95,
+        abs_error,
         root_height,
         root_tilt,
         foot_slip,
@@ -202,6 +228,7 @@ def compute_take_metrics(
         "target_fps": target.fps,
         "target_frames": len(target.joint_angles_rad),
         "telemetry_samples": len(telemetry),
+        "telemetry_max_gap_s": round(float(np.diff(elapsed_s).max(initial=0.0)), 6),
         "duration_s": round(duration_s, 6),
         "overall": overall,
         "per_second": per_second,
@@ -233,7 +260,7 @@ def _summarize_window(
     start_s: float,
     end_s: float,
     mean_error: np.ndarray,
-    p95_error: np.ndarray,
+    absolute_joint_error: np.ndarray,
     root_height: np.ndarray,
     root_tilt: np.ndarray,
     foot_slip: np.ndarray,
@@ -247,7 +274,7 @@ def _summarize_window(
         "start_s": round(float(start_s), 6),
         "end_s": round(float(end_s), 6),
         "tracking_mean_abs_error_rad": round(float(mean_error.mean()), 6),
-        "tracking_p95_abs_error_rad": round(float(np.percentile(p95_error, 95)), 6),
+        "tracking_p95_abs_error_rad": round(float(np.percentile(absolute_joint_error, 95)), 6),
         "root_height_min_m": round(float(root_height.min()), 6),
         "root_tilt_max_deg": round(float(root_tilt.max()), 6),
         "foot_slip_max_m_s": round(float(foot_slip.max()), 6),
