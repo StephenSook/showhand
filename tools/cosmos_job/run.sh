@@ -15,10 +15,11 @@ pip install --quiet --no-cache-dir \
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 start_ns=$(date +%s%N)
 python /work/visual_judge.py \
+  --take-id "$take_id" \
   --manifest /work/pairs/manifest.json \
   --output "/work/${take_id}.visual.json"
 end_ns=$(date +%s%N)
 echo "COSMOS_WALL_S=$(python -c "print(($end_ns-$start_ns)/1e9)")"
 echo "=== COSMOS_JSON_BEGIN $take_id"
-gzip -c "/work/${take_id}.visual.json" | base64 -w 76
+gzip -c "/work/${take_id}.visual.json" | base64 -w 1000
 echo "=== COSMOS_JSON_END $take_id"
