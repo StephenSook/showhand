@@ -167,6 +167,14 @@ def test_take_record_refuses_unlabeled_stock_output(tmp_path: Path) -> None:
         write_take_record(tmp_path / "record.json", record)
 
 
+def test_take_record_accepts_stephen_take(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    record["label"] = "Stephen's take"
+    output = tmp_path / "record.json"
+    write_take_record(output, record)
+    assert '"label": "Stephen\'s take"' in output.read_text(encoding="utf-8")
+
+
 def test_take_record_requires_decisive_artifacts(tmp_path: Path) -> None:
     record = _record(tmp_path)
     del record["artifacts"]["sim_step_telemetry"]

@@ -22,6 +22,8 @@ REQUIRED_FILE_ARTIFACTS = (
     "metrics",
 )
 
+ALLOWED_TAKE_LABELS = frozenset({"PLUMBING TEST", "Stephen's take"})
+
 
 def write_take_record(path: str | Path, record: dict[str, Any]) -> None:
     materialized = deepcopy(record)
@@ -69,8 +71,11 @@ def validate_take_record(record: dict[str, Any]) -> None:
     missing = required.difference(record)
     if missing:
         raise ValueError(f"take record missing fields: {', '.join(sorted(missing))}")
-    if record["label"] != "PLUMBING TEST":
-        raise ValueError("Phase 1 stock clip records must be labeled PLUMBING TEST")
+    if record["label"] not in ALLOWED_TAKE_LABELS:
+        raise ValueError(
+            "take label must be PLUMBING TEST for a stock clip "
+            "or Stephen's take for a builder recording"
+        )
     sha = record["threshold_commit_sha"]
     if not _is_hex_digest(sha, 40):
         raise ValueError("threshold_commit_sha must be a full 40-character Git SHA")
