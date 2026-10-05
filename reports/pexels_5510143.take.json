@@ -5,7 +5,7 @@
   "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
   "threshold_path": "config/thresholds.yaml",
   "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
-  "code_commit_sha": "51d8f835479b39d3a75286d70b269dab9a238c78",
+  "code_commit_sha": "c69dd24b11caf2e7449a236212a69132f1ab6334",
   "source": {
     "path": "clips/pexels_5510143.mp4",
     "original_wsl_path": "/home/stephensookra/showhand/clips/pexels_5510143.mp4",
@@ -25,6 +25,7 @@
     "newton_g1_reference_csv": "artifacts/gemx/pexels_5510143/pexels_5510143_retarget_g1.csv",
     "sonic_input_sequence": "artifacts/runs/pexels_5510143/final/replayed_smpl.npz",
     "sonic_csv_logs": "artifacts/runs/pexels_5510143/final/sonic_logs",
+    "sonic_console": "artifacts/runs/pexels_5510143/final/sonic_logs/console.log",
     "sim_step_telemetry": "artifacts/runs/pexels_5510143/final/sim/telemetry.csv",
     "sim_metadata": "artifacts/runs/pexels_5510143/final/sim/sim_meta.json",
     "replay_timing": "artifacts/runs/pexels_5510143/final/replay_timing.json",
@@ -39,23 +40,23 @@
   },
   "timings_s": {
     "gem_x_and_newton_retarget": 722.984161058,
-    "soma_to_smpl_precompute": 11.69668188200012,
-    "sonic_replay_50_hz": 17.600002583,
-    "offline_sim_render": 370.8,
-    "visual_pair_extraction": 6.03688,
-    "deterministic_metrics": 1.955245,
+    "soma_to_smpl_precompute": 13.261918436000997,
+    "sonic_replay_50_hz": 17.600001629,
+    "offline_sim_render": 241.58,
+    "visual_pair_extraction": 4.298239,
+    "deterministic_metrics": 1.180578,
     "cosmos_job": 0.0,
     "nemotron_fusion": 0.0
   },
   "metrics": {
     "retargeter": "NVIDIA SOMA Retargeter NewtonPipeline soma_to_unitree_g1",
-    "tracking_mean_abs_error_rad": 0.485052,
-    "tracking_p95_abs_error_rad": 1.119997,
-    "root_height_min_m": 0.189155,
-    "root_tilt_max_deg": 85.514896,
-    "foot_slip_max_m_s": 1.041916,
-    "foot_slip_seconds": 2.663078,
-    "out_of_balance_seconds": 10.734144,
+    "tracking_mean_abs_error_rad": 0.485229,
+    "tracking_p95_abs_error_rad": 1.119721,
+    "root_height_min_m": 0.189235,
+    "root_tilt_max_deg": 85.480833,
+    "foot_slip_max_m_s": 0.989901,
+    "foot_slip_seconds": 2.725299,
+    "out_of_balance_seconds": 11.29273,
     "falls": 14,
     "pass": false,
     "reason_codes": [
@@ -67,13 +68,27 @@
       "fall"
     ]
   },
+  "replay_validation": {
+    "publisher_warmup_s": 0.5,
+    "max_allowed_jitter_s": 0.01,
+    "publish_jitter_max_s": 0.0008630170050309971,
+    "publish_jitter_p95_s": 0.0000027089990908280015,
+    "sonic_received_frames": 881,
+    "sonic_first_frame": 0,
+    "sonic_final_frame": 880,
+    "telemetry_steps": 18128,
+    "telemetry_bytes": 16224799,
+    "telemetry_sha256": "239e9e532f069d1cf2423df21ccf7aea0fbde0a8d541304b4084b121436ecc7e",
+    "replay_timing_sha256": "f2972f4f1e9efb36afcbb4301fc76f478406314ffe3a242af316ca7b17bcbac1",
+    "post_roll_evaluated_s": 0.609883
+  },
   "visual_judge": {
     "status": "blocked_before_job_create",
     "model_id": "nvidia/Cosmos-Reason1-7B",
     "precision": "bfloat16",
     "job": {},
     "verdicts": [],
-    "error": "Nebius CLI OAuth token expired at 2026-10-05T15:26:01Z and requested browser authentication"
+    "error": "Nebius CLI OAuth token expired at 2026-10-05T15:26:01Z; a fresh no-browser authorization timed out before job creation with context deadline exceeded, trace ID d87414b7bf30576eb3a7b62a45f0fc39"
   },
   "fusion": {
     "status": "not_run_missing_visual_verdicts",
@@ -101,6 +116,8 @@
     "The frame 333 abort acknowledgement timed out before the simulator flushed; the simulator then logged BrokenPipeError and exited 1",
     "RuntimeError: 50 Hz publish jitter 0.044585s exceeds 0.010000s at frame 18",
     "showhand.metrics.MetricsInputError: telemetry gap 0.342198s exceeds 0.050000s",
-    "RuntimeError: 50 Hz publish jitter 0.010615s exceeds 0.010000s at frame 199"
+    "RuntimeError: 50 Hz publish jitter 0.010615s exceeds 0.010000s at frame 199",
+    "A replay later withdrawn from grading had SONIC receipt frames 5 through 880, not the required 0 through 880",
+    "Nebius CLI browser authorization timed out before job creation: context deadline exceeded; trace ID d87414b7bf30576eb3a7b62a45f0fc39"
   ]
 }
