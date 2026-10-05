@@ -5,7 +5,7 @@
   "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
   "threshold_path": "config/thresholds.yaml",
   "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
-  "code_commit_sha": "dfda9cb4ee6f41f48645f3812347c868f337b621",
+  "code_commit_sha": "51d8f835479b39d3a75286d70b269dab9a238c78",
   "source": {
     "path": "clips/pexels_5510143.mp4",
     "original_wsl_path": "/home/stephensookra/showhand/clips/pexels_5510143.mp4",
@@ -23,7 +23,7 @@
     "gem_x_comparison_render": "artifacts/gemx/pexels_5510143/pexels_5510143_3_incam_global_horiz.mp4",
     "newton_g1_preview": "artifacts/gemx/pexels_5510143/pexels_5510143_4_g1_retarget.mp4",
     "newton_g1_reference_csv": "artifacts/gemx/pexels_5510143/pexels_5510143_retarget_g1.csv",
-    "sonic_input_sequence": "artifacts/runs/pexels_5510143/final/smpl_sequence.npz",
+    "sonic_input_sequence": "artifacts/runs/pexels_5510143/final/replayed_smpl.npz",
     "sonic_csv_logs": "artifacts/runs/pexels_5510143/final/sonic_logs",
     "sim_step_telemetry": "artifacts/runs/pexels_5510143/final/sim/telemetry.csv",
     "sim_metadata": "artifacts/runs/pexels_5510143/final/sim/sim_meta.json",
@@ -39,26 +39,27 @@
   },
   "timings_s": {
     "gem_x_and_newton_retarget": 722.984161058,
-    "soma_to_smpl_precompute": 11.865079948001949,
-    "sonic_replay_50_hz": 17.600160382,
-    "offline_sim_render": 206.990301,
-    "visual_pair_extraction": 4.081935,
-    "deterministic_metrics": 1.103975,
+    "soma_to_smpl_precompute": 11.69668188200012,
+    "sonic_replay_50_hz": 17.600002583,
+    "offline_sim_render": 370.8,
+    "visual_pair_extraction": 6.03688,
+    "deterministic_metrics": 1.955245,
     "cosmos_job": 0.0,
     "nemotron_fusion": 0.0
   },
   "metrics": {
     "retargeter": "NVIDIA SOMA Retargeter NewtonPipeline soma_to_unitree_g1",
-    "tracking_mean_abs_error_rad": 0.245693,
-    "tracking_p95_abs_error_rad": 0.695628,
-    "root_height_min_m": 0.197225,
-    "root_tilt_max_deg": 71.835519,
-    "foot_slip_max_m_s": 3.182455,
-    "foot_slip_seconds": 0.50103,
-    "out_of_balance_seconds": 0.873192,
-    "falls": 1,
+    "tracking_mean_abs_error_rad": 0.485052,
+    "tracking_p95_abs_error_rad": 1.119997,
+    "root_height_min_m": 0.189155,
+    "root_tilt_max_deg": 85.514896,
+    "foot_slip_max_m_s": 1.041916,
+    "foot_slip_seconds": 2.663078,
+    "out_of_balance_seconds": 10.734144,
+    "falls": 14,
     "pass": false,
     "reason_codes": [
+      "tracking_p95_abs_error_rad",
       "root_height_m",
       "root_tilt_deg",
       "foot_slip",
@@ -94,6 +95,12 @@
   },
   "errors": [
     "Linux Killed the first GEM-X attempt under the image-feature path",
-    "Nebius CLI requested browser authentication before job creation"
+    "Nebius CLI requested browser authentication before job creation",
+    "RuntimeError: 50 Hz publish jitter 0.032240s exceeds 0.010000s at frame 710",
+    "RuntimeError: 50 Hz publish jitter 0.142612s exceeds 0.010000s at frame 333",
+    "The frame 333 abort acknowledgement timed out before the simulator flushed; the simulator then logged BrokenPipeError and exited 1",
+    "RuntimeError: 50 Hz publish jitter 0.044585s exceeds 0.010000s at frame 18",
+    "showhand.metrics.MetricsInputError: telemetry gap 0.342198s exceeds 0.050000s",
+    "RuntimeError: 50 Hz publish jitter 0.010615s exceeds 0.010000s at frame 199"
   ]
 }
