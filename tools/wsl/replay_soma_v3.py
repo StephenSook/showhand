@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -22,6 +23,26 @@ def wait_until(deadline_s: float, spin_margin_s: float = 0.003) -> None:
         time.sleep(remaining_s - spin_margin_s)
     while time.monotonic() < deadline_s:
         pass
+
+
+def git_provenance(repo_root: Path) -> tuple[str, bool]:
+    status = subprocess.run(
+        ["git", "-C", str(repo_root), "status", "--porcelain", "--untracked-files=all"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    if status.stdout:
+        raise RuntimeError("Showhand repository must be clean before replay")
+    commit = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+        raise RuntimeError("Showhand repository HEAD is not a full Git commit SHA")
+    return commit, True
 
 
 def main() -> None:
@@ -46,6 +67,7 @@ def main() -> None:
         raise SystemExit(
             "run id must use 1-128 ASCII letters, digits, dots, underscores, or hyphens"
         )
+    code_commit_sha, code_tree_clean = git_provenance(Path(__file__).resolve().parents[2])
 
     gemx_root = Path("/home/stephensookra/showhand/GEM-X")
     sonic_root = Path("/home/stephensookra/showhand/GR00T-WholeBodyControl")
@@ -188,6 +210,8 @@ def main() -> None:
     timing = {
         "schema_version": 1,
         "run_id": args.run_id,
+        "code_commit_sha": code_commit_sha,
+        "code_tree_clean": code_tree_clean,
         "source_pt": str(Path(args.pt).resolve()),
         "source_frames": source_frames,
         "source_fps": args.source_fps,

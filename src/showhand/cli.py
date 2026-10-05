@@ -166,13 +166,19 @@ def _validate_completion(
 
 def _validate_controller_receipt(path: str | Path, *, output_frames: int, run_id: str) -> None:
     text = Path(path).read_text(encoding="utf-8", errors="replace")
-    logged_run_ids = re.findall(r"^SHOWHAND_RUN_ID=(\S+)$", text, flags=re.MULTILINE)
-    if logged_run_ids != [run_id]:
-        raise ValueError("SONIC log run_id differs from replay timing")
+    begin_marker = f"SHOWHAND_RUN_BEGIN={run_id}\n"
+    end_marker = f"SHOWHAND_RUN_END={run_id} exit=0\n"
+    if text.count(begin_marker) != 1 or text.count(end_marker) != 1:
+        raise ValueError("SONIC log does not contain one successful run boundary")
+    begin = text.index(begin_marker) + len(begin_marker)
+    end = text.index(end_marker)
+    if begin >= end:
+        raise ValueError("SONIC log run boundaries are out of order")
+    invocation = text[begin:end]
     received = [
         int(match)
         for match in re.findall(
-            r"Protocol v3: Received SMPL action \(single\) - frame_index: (\d+)", text
+            r"Protocol v3: Received SMPL action \(single\) - frame_index: (\d+)", invocation
         )
     ]
     expected = list(range(output_frames))
