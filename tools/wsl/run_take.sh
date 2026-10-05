@@ -24,6 +24,9 @@ take_video=$1
 output_root=$2
 run_id=$3
 repo=$(cd "$(dirname "$0")/../.." && pwd)
+# Resolve now, against the caller's directory: later stages cd into GEM-X and SONIC, and a relative
+# OUTPUT_ROOT would silently land inside those trees (take 0526 on 2026-10-05 did exactly that).
+output_root=$(realpath -m "$output_root")
 gemx_root=/home/stephensookra/showhand/GEM-X
 sonic_root=/home/stephensookra/showhand/GR00T-WholeBodyControl
 frozen_threshold_commit=0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9
