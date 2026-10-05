@@ -82,7 +82,7 @@ def test_metrics_refuse_empty_replay_interval(tmp_path: Path) -> None:
         )
 
 
-def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None:
+def test_metrics_grade_post_roll_against_final_target_pose(tmp_path: Path) -> None:
     target_path = tmp_path / "target.csv"
     telemetry_path = tmp_path / "telemetry.csv"
     _write_target(target_path)
@@ -106,8 +106,10 @@ def test_metrics_exclude_telemetry_after_target_duration(tmp_path: Path) -> None
         target, telemetry, 1_000_000_000, load_thresholds("config/thresholds.yaml")
     )
 
-    assert result["telemetry_samples"] == 3
-    assert result["overall"]["pass"] is True
+    assert result["telemetry_samples"] == 4
+    assert result["post_roll_evaluated_s"] == 0.5
+    assert result["overall"]["pass"] is False
+    assert "fall" in result["overall"]["reason_codes"]
 
 
 def test_metrics_refuse_support_release_after_replay_start(tmp_path: Path) -> None:

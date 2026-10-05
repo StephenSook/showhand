@@ -35,6 +35,7 @@ def main() -> None:
     parser.add_argument("--completion-timeout-s", default=30.0, type=float)
     parser.add_argument("--max-jitter-s", default=0.01, type=float)
     parser.add_argument("--post-roll-s", default=0.6, type=float)
+    parser.add_argument("--publisher-warmup-s", default=0.5, type=float)
     parser.add_argument("--port", default=5556, type=int)
     args = parser.parse_args()
     if args.source_fps <= 0 or args.output_fps <= 0:
@@ -80,6 +81,9 @@ def main() -> None:
     conversion_wall_s = time.perf_counter() - conversion_started
 
     publisher = SonicV3Publisher(port=args.port, sonic_root=str(sonic_root))
+    if args.publisher_warmup_s < 0:
+        raise SystemExit("publisher warmup must be non-negative")
+    time.sleep(args.publisher_warmup_s)
     print(
         f"REPLAY_SOURCE_FRAMES={source_frames} SOURCE_FPS={args.source_fps} "
         f"OUTPUT_FRAMES={output_frames} OUTPUT_FPS={args.output_fps} "
@@ -186,8 +190,11 @@ def main() -> None:
         "artifacts_flushed_monotonic_ns": int(completion["artifacts_flushed_monotonic_ns"]),
         "simulator_last_telemetry_monotonic_ns": int(completion["last_telemetry_monotonic_ns"]),
         "simulator_telemetry_steps": int(completion["telemetry_steps"]),
+        "simulator_telemetry_sha256": str(completion["telemetry_sha256"]),
+        "simulator_telemetry_bytes": int(completion["telemetry_bytes"]),
         "expected_final_frame_index": int(completion["expected_final_frame_index"]),
         "post_roll_s": args.post_roll_s,
+        "publisher_warmup_s": args.publisher_warmup_s,
         "wall_duration_s": (end_ns - start_ns) / 1_000_000_000,
         "publish_jitter_max_s": max(publish_jitter_s, default=0.0),
         "publish_jitter_p95_s": float(np.percentile(publish_jitter_s, 95)),

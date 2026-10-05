@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
+import os
 import socket
 import time
 from pathlib import Path
@@ -76,6 +78,14 @@ def _root_tilt_deg(quaternion_wxyz: np.ndarray) -> float:
     _, x, y, _ = (float(value) for value in quaternion_wxyz)
     up_z = 1.0 - 2.0 * (x * x + y * y)
     return math.degrees(math.acos(max(-1.0, min(1.0, up_z))))
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def main() -> None:
@@ -308,10 +318,17 @@ def main() -> None:
     finally:
         handshake.close()
         handshake_path.unlink(missing_ok=True)
-        with Path(args.telemetry).open("w", newline="", encoding="utf-8") as handle:
+        telemetry_path = Path(args.telemetry)
+        telemetry_temp = telemetry_path.with_suffix(telemetry_path.suffix + ".tmp")
+        with telemetry_temp.open("w", newline="", encoding="utf-8") as handle:
             telemetry_writer = csv.DictWriter(handle, fieldnames=fields)
             telemetry_writer.writeheader()
             telemetry_writer.writerows(telemetry_rows)
+            handle.flush()
+            os.fsync(handle.fileno())
+        telemetry_temp.replace(telemetry_path)
+        telemetry_sha256 = _sha256(telemetry_path)
+        telemetry_bytes = telemetry_path.stat().st_size
         metadata_write_ns = time.monotonic_ns()
         metadata = {
             "schema_version": 1,
@@ -331,6 +348,8 @@ def main() -> None:
             "replay_end_monotonic_ns": state["replay_end_monotonic_ns"],
             "post_roll_s": state["post_roll_s"],
             "metadata_write_monotonic_ns": metadata_write_ns,
+            "telemetry_sha256": telemetry_sha256,
+            "telemetry_bytes": telemetry_bytes,
             "fall_condition": "transition into root_height_m < 0.2 before stock reset",
             "foot_slip_definition": (
                 "horizontal contact-foot displacement divided by measured simulator time; "
@@ -340,7 +359,13 @@ def main() -> None:
                 "COM projection inside convex hull of oriented contact-foot rectangles"
             ),
         }
-        Path(args.sim_meta).write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+        metadata_path = Path(args.sim_meta)
+        metadata_temp = metadata_path.with_suffix(metadata_path.suffix + ".tmp")
+        with metadata_temp.open("w", encoding="utf-8") as handle:
+            handle.write(json.dumps(metadata, indent=2) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        metadata_temp.replace(metadata_path)
         artifacts_flushed_ns = time.monotonic_ns()
         completion_connection = state["completion_connection"]
         if completion_connection is not None:
@@ -352,6 +377,8 @@ def main() -> None:
                 "last_telemetry_monotonic_ns": metadata["last_telemetry_monotonic_ns"],
                 "expected_final_frame_index": state["expected_final_frame_index"],
                 "expected_output_frames": state["expected_output_frames"],
+                "telemetry_sha256": telemetry_sha256,
+                "telemetry_bytes": telemetry_bytes,
             }
             try:
                 completion_connection.sendall((json.dumps(acknowledgement) + "\n").encode())

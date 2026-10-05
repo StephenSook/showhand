@@ -158,11 +158,8 @@ def compute_take_metrics(
         [(row["monotonic_ns"] - replay_start_monotonic_ns) / 1_000_000_000 for row in telemetry],
         dtype=np.float64,
     )
-    within_target = (elapsed_s >= 0.0) & (elapsed_s <= target.duration_s)
-    if not within_target.any():
+    if not ((elapsed_s >= 0.0) & (elapsed_s <= target.duration_s)).any():
         raise MetricsInputError("telemetry does not overlap the retargeted motion duration")
-    elapsed_s = elapsed_s[within_target]
-    telemetry = [row for row, keep in zip(telemetry, within_target, strict=True) if keep]
     measured = np.asarray(
         [[row[f"q_{i}"] for i in range(29)] for row in telemetry], dtype=np.float64
     )
@@ -181,11 +178,15 @@ def compute_take_metrics(
     slip_active = foot_slip > float(thresholds["foot_slip"]["contact_speed_threshold_m_s"])
 
     window_s = float(thresholds["window_seconds"])
-    duration_s = min(float(elapsed_s[-1]), target.duration_s)
+    duration_s = target.duration_s
+    evaluation_duration_s = float(elapsed_s[-1])
     per_second = []
     for start_s in np.arange(0.0, max(duration_s, 1e-12), window_s):
         end_s = min(start_s + window_s, duration_s)
-        mask = (elapsed_s >= start_s) & (elapsed_s < end_s)
+        if end_s == duration_s:
+            mask = (elapsed_s >= start_s) & (elapsed_s <= evaluation_duration_s)
+        else:
+            mask = (elapsed_s >= start_s) & (elapsed_s < end_s)
         if not mask.any():
             continue
         window_dt = np.minimum(dt[mask], np.maximum(0.0, end_s - elapsed_s[mask]))
@@ -230,6 +231,8 @@ def compute_take_metrics(
         "telemetry_samples": len(telemetry),
         "telemetry_max_gap_s": round(float(np.diff(elapsed_s).max(initial=0.0)), 6),
         "duration_s": round(duration_s, 6),
+        "evaluation_duration_s": round(evaluation_duration_s, 6),
+        "post_roll_evaluated_s": round(max(0.0, evaluation_duration_s - duration_s), 6),
         "overall": overall,
         "per_second": per_second,
     }

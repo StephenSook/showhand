@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
 import json
+import re
 from pathlib import Path
 
 from showhand.fusion import request_fusion
@@ -24,6 +27,7 @@ def main() -> None:
     metrics_parser.add_argument("--telemetry", required=True)
     metrics_parser.add_argument("--replay-timing", required=True)
     metrics_parser.add_argument("--sim-meta", required=True)
+    metrics_parser.add_argument("--sonic-console", required=True)
     metrics_parser.add_argument("--thresholds", default="config/thresholds.yaml")
     metrics_parser.add_argument("--out", required=True)
 
@@ -50,12 +54,13 @@ def main() -> None:
         sim_meta = _read_json(args.sim_meta)
         replay_start_ns = int(timing["replay_start_monotonic_ns"])
         replay_end_ns = int(timing["replay_end_monotonic_ns"])
-        _validate_completion(timing, sim_meta)
+        evaluation_end_ns = int(timing["simulator_last_telemetry_monotonic_ns"])
+        _validate_completion(timing, sim_meta, args.telemetry, args.sonic_console)
         target = load_retargeted_motion(args.retarget_csv, args.source_fps)
         telemetry = load_sim_telemetry(
             args.telemetry,
             replay_start_ns,
-            replay_end_ns,
+            evaluation_end_ns,
             int(sim_meta["elastic_band_release_monotonic_ns"]),
         )
         result = compute_take_metrics(target, telemetry, replay_start_ns, thresholds)
@@ -67,7 +72,8 @@ def main() -> None:
             ),
             "release_before_replay": True,
             "replay_start_monotonic_ns": replay_start_ns,
-            "replay_end_monotonic_ns": replay_end_ns,
+            "last_publish_monotonic_ns": replay_end_ns,
+            "evaluation_end_monotonic_ns": evaluation_end_ns,
             "post_roll_s": float(timing["post_roll_s"]),
             "artifacts_flushed_monotonic_ns": int(timing["artifacts_flushed_monotonic_ns"]),
             "elastic_band_release_monotonic_ns": int(sim_meta["elastic_band_release_monotonic_ns"]),
@@ -93,7 +99,9 @@ def _read_json(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def _validate_completion(timing: dict, sim_meta: dict) -> None:
+def _validate_completion(
+    timing: dict, sim_meta: dict, telemetry_path: str | Path, sonic_console_path: str | Path
+) -> None:
     replay_end_ns = int(timing["replay_end_monotonic_ns"])
     completion_request_ns = int(timing["completion_request_monotonic_ns"])
     if timing["completion_status"] != "completed" or sim_meta["completion_status"] != "completed":
@@ -102,6 +110,8 @@ def _validate_completion(timing: dict, sim_meta: dict) -> None:
         raise ValueError("simulator completion request provenance differs")
     if completion_request_ns < replay_end_ns:
         raise ValueError("simulator completion request predates replay end")
+    if replay_end_ns != int(sim_meta["replay_end_monotonic_ns"]):
+        raise ValueError("simulator replay end differs from replay timing")
     if int(timing["expected_final_frame_index"]) != int(timing["output_frames"]) - 1:
         raise ValueError("completion final frame index differs from replay output")
     if int(sim_meta["expected_final_frame_index"]) != int(timing["expected_final_frame_index"]):
@@ -110,6 +120,21 @@ def _validate_completion(timing: dict, sim_meta: dict) -> None:
         raise ValueError("simulator expected frame count differs from replay output")
     if int(timing["simulator_telemetry_steps"]) != int(sim_meta["telemetry_steps"]):
         raise ValueError("simulator telemetry step count differs from metadata")
+    telemetry_path = Path(telemetry_path)
+    telemetry_sha256 = _sha256(telemetry_path)
+    if telemetry_sha256 != timing["simulator_telemetry_sha256"]:
+        raise ValueError("telemetry bytes differ from replay acknowledgement")
+    if telemetry_sha256 != sim_meta["telemetry_sha256"]:
+        raise ValueError("telemetry bytes differ from simulator metadata")
+    telemetry_bytes = telemetry_path.stat().st_size
+    if telemetry_bytes != int(timing["simulator_telemetry_bytes"]):
+        raise ValueError("telemetry byte count differs from replay acknowledgement")
+    if telemetry_bytes != int(sim_meta["telemetry_bytes"]):
+        raise ValueError("telemetry byte count differs from simulator metadata")
+    with telemetry_path.open(newline="", encoding="utf-8") as handle:
+        telemetry_rows = sum(1 for _ in csv.DictReader(handle))
+    if telemetry_rows != int(sim_meta["telemetry_steps"]):
+        raise ValueError("telemetry row count differs from simulator metadata")
     last_telemetry_ns = int(timing["simulator_last_telemetry_monotonic_ns"])
     if last_telemetry_ns != int(sim_meta["last_telemetry_monotonic_ns"]):
         raise ValueError("simulator final telemetry timestamp differs from metadata")
@@ -123,6 +148,43 @@ def _validate_completion(timing: dict, sim_meta: dict) -> None:
         raise ValueError("simulator telemetry does not cover the required controller drain")
     if int(timing["artifacts_flushed_monotonic_ns"]) <= last_telemetry_ns:
         raise ValueError("simulator acknowledged completion before artifacts were flushed")
+    _validate_controller_receipt(
+        sonic_console_path,
+        output_frames=int(timing["output_frames"]),
+    )
+
+
+def _validate_controller_receipt(path: str | Path, *, output_frames: int) -> None:
+    text = Path(path).read_text(encoding="utf-8", errors="replace")
+    received = [
+        int(match)
+        for match in re.findall(
+            r"Protocol v3: Received SMPL action \(single\) - frame_index: (\d+)", text
+        )
+    ]
+    expected = list(range(output_frames))
+    if received != expected:
+        first_difference = next(
+            (
+                index
+                for index, pair in enumerate(zip(received, expected, strict=False))
+                if pair[0] != pair[1]
+            ),
+            min(len(received), len(expected)),
+        )
+        raise ValueError(
+            "SONIC controller receipt is incomplete or out of order: "
+            f"received {len(received)} of {output_frames} frames; "
+            f"first difference at position {first_difference}"
+        )
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _write_json(path: str, payload: object) -> None:
