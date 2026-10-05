@@ -10,6 +10,14 @@ import subprocess
 from pathlib import Path
 
 
+def load_render_fps(path: str | Path) -> float:
+    render_meta = json.loads(Path(path).read_text(encoding="utf-8"))
+    render_fps = float(render_meta["render_fps"])
+    if render_fps <= 0:
+        raise ValueError("render_fps must be positive")
+    return render_fps
+
+
 def build_ffmpeg_command(
     human: str,
     robot: str,
@@ -45,6 +53,7 @@ def main() -> None:
     parser.add_argument("--human", required=True)
     parser.add_argument("--robot", required=True)
     parser.add_argument("--render-timestamps", required=True)
+    parser.add_argument("--render-meta", required=True)
     parser.add_argument("--replay-timing", required=True)
     parser.add_argument("--duration", required=True, type=float)
     parser.add_argument("--output-dir", required=True)
@@ -52,6 +61,7 @@ def main() -> None:
 
     timing = json.loads(Path(args.replay_timing).read_text(encoding="utf-8"))
     replay_start_ns = int(timing["replay_start_monotonic_ns"])
+    render_fps = load_render_fps(args.render_meta)
     with Path(args.render_timestamps).open(newline="", encoding="utf-8") as handle:
         render_rows = list(csv.DictReader(handle))
     if not render_rows:
@@ -69,7 +79,7 @@ def main() -> None:
         frame_index = min(
             range(len(render_times)), key=lambda item: abs(render_times[item] - target_stamp)
         )
-        robot_s = frame_index / 30.0
+        robot_s = frame_index / render_fps
         destination = output / f"window-{index:03d}.jpg"
         command = build_ffmpeg_command(args.human, args.robot, center_s, robot_s, destination)
         subprocess.run(command, check=True)
@@ -81,6 +91,7 @@ def main() -> None:
                 "center_s": center_s,
                 "robot_frame_index": frame_index,
                 "robot_video_s": robot_s,
+                "render_fps": render_fps,
                 "pair_path": destination.name,
             }
         )
