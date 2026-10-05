@@ -14,7 +14,11 @@ class ThresholdError(ValueError):
 
 
 def load_thresholds(path: str | Path) -> dict[str, Any]:
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return parse_thresholds(Path(path).read_text(encoding="utf-8"))
+
+
+def parse_thresholds(text: str) -> dict[str, Any]:
+    data = yaml.safe_load(text)
     if not isinstance(data, dict):
         raise ThresholdError("threshold file must contain a mapping")
     if data.get("frozen") is not True:

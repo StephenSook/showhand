@@ -217,6 +217,19 @@ def test_take_record_rejects_mirrored_but_wrong_metric_verdict(tmp_path: Path) -
         write_take_record(tmp_path / "record.json", record)
 
 
+def test_take_record_rejects_wrong_pass_with_correct_reason_codes(tmp_path: Path) -> None:
+    record = _record(tmp_path)
+    metrics_path = Path(record["artifacts"]["metrics"])
+    artifact_metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    artifact_metrics["overall"]["tracking_mean_abs_error_rad"] = 9.0
+    artifact_metrics["overall"]["reason_codes"] = ["tracking_mean_abs_error_rad"]
+    metrics_path.write_text(json.dumps(artifact_metrics) + "\n", encoding="utf-8")
+    record["metrics"]["tracking_mean_abs_error_rad"] = 9.0
+    record["metrics"]["reason_codes"] = ["tracking_mean_abs_error_rad"]
+    with pytest.raises(ValueError, match="pass verdict disagrees with frozen thresholds"):
+        write_take_record(tmp_path / "record.json", record)
+
+
 def test_validate_take_record_rejects_direct_run_id_mismatch(tmp_path: Path) -> None:
     output = tmp_path / "record.json"
     write_take_record(output, _record(tmp_path))
@@ -256,12 +269,14 @@ def test_take_record_rejects_wrong_threshold_blob_at_replay_commit(
 ) -> None:
     record = _record(tmp_path)
     code_commit_sha = record["code_commit_sha"]
+    assert record["threshold_commit_sha"] != code_commit_sha
     original_run = subprocess.run
 
     def fake_run(
         args: list[str], *positional: object, **keywords: object
     ) -> subprocess.CompletedProcess:
-        if args[:2] == ["git", "show"] and args[2].startswith(f"{code_commit_sha}:"):
+        replay_threshold_ref = f"{code_commit_sha}:{Path(record['threshold_path']).as_posix()}"
+        if args == ["git", "show", replay_threshold_ref]:
             return subprocess.CompletedProcess(args, 0, stdout=b"different threshold bytes\n")
         return original_run(args, *positional, **keywords)
 

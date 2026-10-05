@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from showhand.metrics import metric_reason_codes
-from showhand.thresholds import load_thresholds
+from showhand.thresholds import parse_thresholds
 
 REQUIRED_FILE_ARTIFACTS = (
     "sim_step_telemetry",
@@ -270,7 +270,10 @@ def _validate_artifact_semantics(record: dict[str, Any], replay_timing: dict[str
         raise ValueError("take record retargeter differs from metrics artifact")
     if artifact_metrics.get("threshold_sha256") != record["threshold_sha256"]:
         raise ValueError("metrics artifact threshold differs from take record")
-    thresholds = load_thresholds(threshold_path)
+    try:
+        thresholds = parse_thresholds(replay_commit_threshold.stdout.decode("utf-8"))
+    except UnicodeDecodeError as error:
+        raise ValueError("threshold blob at replay code commit is not UTF-8") from error
     derived_reasons = metric_reason_codes(overall, thresholds)
     if overall["reason_codes"] != derived_reasons:
         raise ValueError("metrics artifact reason codes disagree with frozen thresholds")
