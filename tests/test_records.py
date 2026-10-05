@@ -21,6 +21,7 @@ def _record(tmp_path: Path) -> dict:
         "threshold_path": str(threshold),
         "threshold_sha256": hashlib.sha256(threshold.read_bytes()).hexdigest(),
         "code_commit_sha": "0" * 40,
+        "code_tree_clean": True,
         "source": {
             "path": str(source),
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -28,6 +29,7 @@ def _record(tmp_path: Path) -> dict:
         "artifacts": {"metrics": str(artifact), "visual_output": None},
         "timings_s": {"gem_x": 1.0},
         "metrics": {"pass": True, "reason_codes": []},
+        "replay_validation": {"run_id": "test-run"},
         "visual_judge": {"status": "blocked_before_job_create", "job": {}},
         "fusion": {"status": "not_run_missing_visual_verdicts"},
         "cost_usd": {"nebius_gpu": 0.0, "token_factory": 0.0, "total": 0.0},

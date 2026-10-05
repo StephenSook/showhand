@@ -55,7 +55,7 @@ Run GEM-X offline:
 bash tools/wsl/run_gemx_offline.sh CLIP OUTPUT_ROOT
 ```
 
-Start `tools/wsl/run_instrumented_sim.py` in the stock simulation environment, start `tools/wsl/run_sonic.sh`, select ZMQ mode, and run `tools/wsl/replay_soma_v3.py`. The publisher waits 0.5 seconds for the stock ZMQ subscriber before requesting support release through a Unix socket. Its 50 Hz clock starts only after the simulator acknowledges that release. Publish-loop failures send an abort. After the last frame, the replay sends a finish request with the expected final frame and requests 0.6 seconds of controller drain. The simulator exits its own loop, writes telemetry plus metadata atomically, hashes the telemetry bytes, and acknowledges only after those artifacts are flushed. The metrics gate requires SONIC's own log to contain every Protocol v3 frame index in exact order, binds the telemetry bytes and row count to the acknowledgement, and grades the drain against the final target pose. The replay precomputes every SOMA-to-SMPL conversion before it starts the clock. Its scheduler sleeps for most of each interval and uses a bounded 3 ms final pacing margin. The frozen 10 ms maximum-jitter gate is unchanged. Rendering is a separate pass so image generation cannot slow control:
+Start `tools/wsl/run_instrumented_sim.py` in the stock simulation environment, start `tools/wsl/run_sonic.sh LOG_DIRECTORY RUN_ID`, select ZMQ mode, and run `tools/wsl/replay_soma_v3.py` with the same `--run-id`. The publisher waits 0.5 seconds for the stock ZMQ subscriber before requesting support release through a Unix socket. Its 50 Hz clock starts only after the simulator acknowledges that release. Publish-loop failures send an abort. After the last frame, the replay sends a finish request with the expected final frame and requests 0.6 seconds of controller drain. The simulator exits its own loop, writes telemetry and metadata through separate flushed temporary files, replaces each artifact sequentially, hashes the telemetry bytes, and acknowledges after both replacements. The metrics gate requires the run ID to match across replay timing, simulator metadata, and the SONIC launch log. It also requires SONIC's own log to contain every Protocol v3 frame index in exact order, binds the telemetry bytes, final timestamp, and row count to the acknowledgement, and grades the drain against the final target pose. The replay precomputes every SOMA-to-SMPL conversion before it starts the clock. Its scheduler sleeps for most of each interval and uses a bounded 3 ms final pacing margin. The frozen 10 ms maximum-jitter gate is unchanged. Rendering is a separate pass so image generation cannot slow control:
 
 ```bash
 python tools/wsl/render_sim_telemetry.py \
@@ -103,21 +103,22 @@ These outputs come from Pexels stock clips. They are not product evidence.
 | Source frames at 25 fps | 222 | 441 |
 | Target motion duration | 8.84 s | 17.60 s |
 | GEM-X and retarget wall time | 523.342528 s across recovery steps | 722.984161 s |
-| SOMA conversion before replay | 6.662101 s | 13.261918 s |
+| Run ID | `pexels_5510095-20261005-b92a0b1-r1` | `pexels_5510143-20261005-b92a0b1-r1` |
+| SOMA conversion before replay | 6.556396 s | 10.097308 s |
 | 50 Hz replay wall time | 8.840002 s | 17.600002 s |
-| Maximum 50 Hz publish jitter | 0.000008 s | 0.000863 s |
+| Maximum 50 Hz publish jitter | 0.000015 s | 0.000126 s |
 | SONIC Protocol v3 frames received | 443 of 443, 0 through 442 | 881 of 881, 0 through 880 |
-| Post-roll included in grading | 0.608256 s | 0.609883 s |
-| Offline render wall time, end to end | 132.040000 s | 241.580000 s |
-| Paired-frame extraction wall time | 2.774189 s | 4.298239 s |
-| Metrics wall time | 1.038387 s | 1.180578 s |
-| Tracking mean absolute error | 0.530072 rad | 0.485229 rad |
-| Tracking p95 absolute error | 1.274701 rad | 1.119721 rad |
-| Minimum root height | 0.189202 m | 0.189235 m |
-| Maximum root tilt | 85.471702 degrees | 85.480833 degrees |
+| Post-roll included in grading | 0.601113 s | 0.602220 s |
+| Offline render wall time, end to end | 135.000000 s | 239.220000 s |
+| Paired-frame extraction wall time | 3.781250 s | 5.296710 s |
+| Metrics wall time | 0.992881 s | 1.059786 s |
+| Tracking mean absolute error | 0.529747 rad | 0.485267 rad |
+| Tracking p95 absolute error | 1.274297 rad | 1.120304 rad |
+| Minimum root height | 0.190324 m | 0.189222 m |
+| Maximum root tilt | 85.383616 degrees | 85.482052 degrees |
 | Maximum contact-foot slip | 0.989901 m/s | 0.989901 m/s |
-| Contact-foot slip time | 1.420613 s | 2.725299 s |
-| Time out of balance | 5.989494 s | 11.292730 s |
+| Contact-foot slip time | 1.396688 s | 2.760344 s |
+| Time out of balance | 5.970049 s | 11.290641 s |
 | Falls | 7 | 14 |
 | Deterministic threshold result | fail | fail |
 

@@ -33,10 +33,12 @@ def validate_take_record(record: dict[str, Any]) -> None:
         "threshold_path",
         "threshold_sha256",
         "code_commit_sha",
+        "code_tree_clean",
         "source",
         "artifacts",
         "timings_s",
         "metrics",
+        "replay_validation",
         "visual_judge",
         "fusion",
         "cost_usd",
@@ -55,6 +57,8 @@ def validate_take_record(record: dict[str, Any]) -> None:
         raise ValueError("threshold_sha256 must be a 64-character SHA-256")
     if not _is_hex_digest(record["code_commit_sha"], 40):
         raise ValueError("code_commit_sha must be a full 40-character Git SHA")
+    if record["code_tree_clean"] is not True:
+        raise ValueError("code_tree_clean must be true for a Phase 1 take record")
     threshold_path = Path(record["threshold_path"])
     if not threshold_path.is_file() or _sha256(threshold_path) != record["threshold_sha256"]:
         raise ValueError("threshold file does not match threshold_sha256")
@@ -74,6 +78,19 @@ def validate_take_record(record: dict[str, Any]) -> None:
             raise ValueError(f"artifact hash has no file: {name}")
         if not _is_hex_digest(digest, 64) or _sha256(Path(artifact_path)) != digest:
             raise ValueError(f"artifact hash mismatch: {name}")
+    replay_validation = record["replay_validation"]
+    if not isinstance(replay_validation.get("run_id"), str) or not replay_validation["run_id"]:
+        raise ValueError("replay_validation.run_id must be a non-empty string")
+    decisive_hashes = {
+        "sim_step_telemetry": "telemetry_sha256",
+        "replay_timing": "replay_timing_sha256",
+    }
+    for artifact_name, replay_key in decisive_hashes.items():
+        artifact_path = record["artifacts"].get(artifact_name)
+        if artifact_path and record["artifact_sha256"].get(artifact_name) != replay_validation.get(
+            replay_key
+        ):
+            raise ValueError(f"replay validation hash differs for {artifact_name}")
     if any(float(value) < 0 for value in record["timings_s"].values()):
         raise ValueError("stage timings cannot be negative")
     costs = record["cost_usd"]
