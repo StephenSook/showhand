@@ -2,7 +2,7 @@
 
 Showhand grades recorded takes of one in-place human move. It does not turn a video into a robot move. It runs a take through NVIDIA's stock pose, retargeting, and humanoid-control path, measures the replay, and identifies seconds that should be shown again.
 
-Phase 1 uses two licensed Pexels clips only to test the plumbing. Every result below is labeled `PLUMBING TEST`. It is not evidence that Showhand agrees with a human grader or improves robot teaching.
+Phase 1 used two licensed Pexels clips only to test the plumbing. Those results are labeled `PLUMBING TEST`. Stephen then recorded three takes of his own on a phone, and they ran through the same pipeline. Neither set is evidence that Showhand agrees with a human grader or improves robot teaching, because no outside grader has labeled a take yet.
 
 ## Ownership and credit
 
@@ -133,6 +133,34 @@ The long replay also exposed real WSL scheduling failures. Four attempts exceede
 
 The visual verdicts, fusion outputs, and GPU costs are not reported here because no Serverless Job reached creation. The prior Nebius CLI credential expired at `2026-10-05T15:26:01Z`. A fresh no-browser authorization later timed out with `context deadline exceeded`, trace ID `d87414b7bf30576eb3a7b62a45f0fc39`. No model output has been substituted. Nebius GPU time and GPU cost are both zero.
 
+## Stephen's takes
+
+Stephen recorded three takes (`IMG_0525` to `IMG_0527`) on a phone at 30 fps on 2026-10-05. Each ran through `tools/wsl/run_take.sh`: GEM-X, SOMA to G1 retargeting, the 50 Hz SONIC replay in MuJoCo, the offline render, a side-by-side clip of source and simulation, and the deterministic grade against the frozen thresholds. The source videos and run folders stay under the ignored `artifacts/` folder and are not committed.
+
+| Field | `take_0525` | `take_0526` | `take_0527` |
+| --- | ---: | ---: | ---: |
+| Source frames at 30 fps | 184 | 187 | 178 |
+| Target motion duration | 6.1 s | 6.2 s | 5.9 s |
+| Run ID | `take0525-20261005-c6847f2-r1` | `take0526-20261005-c82fdba-r1` | `take0527-20261005-c82fdba-r1` |
+| Showhand commit, clean at replay start | `c6847f2` | `c82fdba` | `c82fdba` |
+| 50 Hz frames published | 306 | 311 | 296 |
+| Maximum 50 Hz publish jitter | 0.000039 s | 0.000086 s | 0.000103 s |
+| Publish deadline misses | 0 | 0 | 0 |
+| Tracking mean absolute error | 0.240200 rad | 0.221003 rad | 0.232949 rad |
+| Tracking p95 absolute error | 0.695321 rad | 0.603113 rad | 0.716256 rad |
+| Minimum root height | 0.473044 m | 0.756251 m | 0.481920 m |
+| Maximum root tilt | 23.134581 degrees | 7.273088 degrees | 23.326847 degrees |
+| Maximum contact-foot slip | 1.486444 m/s | 1.546044 m/s | 0.979841 m/s |
+| Contact-foot slip time | 0.784643 s | 0.365411 s | 0.489463 s |
+| Time out of balance | 1.275880 s | 0.552972 s | 0.526571 s |
+| Falls | 0 | 0 | 0 |
+| Deterministic threshold result | fail: foot slip, out of balance | fail: out of balance | fail: out of balance |
+| Seconds that fail on their own | 1 to 2 (tracking p95) | 0 to 1 (out of balance), 2 to 3 (tracking p95) | none |
+
+The simulated G1 stayed up on all three takes, against 7 and 14 falls on the Pexels clips. All three still fail the whole-take cutoffs. `take_0526` and `take_0527` are over the 0.50 s out-of-balance cutoff by 0.053 s and 0.027 s. `take_0527` has no single failing second: its out-of-balance time only crosses the cutoff when the seconds are added up. The per-second rows are the re-show candidates the grade produces.
+
+These are Showhand's measurements of a simulated replay. They do not say whether a human grader would accept the take, and the thresholds were not changed after these runs. The visual judge and fusion have not run on these takes, so no Cosmos or Nemotron output is reported for them.
+
 ## Residual evaluation
 
 `config/residual_prereg.yaml` fixes the comparison before real labels exist. The primary result will be the paired difference between fused-judge and tracking-only Cohen kappa against outside human binary grades, with a whole-take paired percentile bootstrap and 10,000 replicates. The harness also reports agreement rates and confusion matrices.
@@ -141,7 +169,7 @@ The only current residual inputs are synthetic unit-test rows. Their numbers are
 
 ## Not done
 
-- Stephen has not recorded the real takes.
+- Stephen's three takes have deterministic grades only. The visual judge and fusion have not run on them.
 - An outside grader has not supplied human accept or re-show labels.
 - The pre-registered residual comparison therefore has no result.
 - The stock Pexels clips cannot establish product accuracy or value.
