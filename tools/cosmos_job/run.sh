@@ -2,10 +2,12 @@
 set -euo pipefail
 
 take_id="$1"
+# Injected files by default; a read-only bucket mount when the pairs are too large to inject.
+pairs_src="${2:-/inject/pairs}"
 mkdir -p /work/pairs
 cp /inject/visual_judge.py /work/visual_judge.py
-cp /inject/pairs/manifest.json /work/pairs/manifest.json
-cp /inject/pairs/window-*.jpg /work/pairs/
+cp "$pairs_src/manifest.json" /work/pairs/manifest.json
+cp "$pairs_src"/window-*.jpg /work/pairs/
 
 export PIP_BREAK_SYSTEM_PACKAGES=1
 pip install --quiet --no-cache-dir \
