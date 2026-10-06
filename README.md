@@ -92,7 +92,7 @@ bash tools/cosmos_job/fetch.sh JOB_ID TAKE_ID PAIRS_DIR/manifest.json OUTPUT_JSO
 .venv\Scripts\showhand write-record --input RECORD_INPUT.json --out TAKE_RECORD.json
 ```
 
-The Nebius fetch script requests `logs --tail 1000` and extracts only the delimited, gzip-compressed JSON payload. Each injected image is checked against Nebius's 65,536-byte per-file limit before a job is created.
+The Nebius fetch script requests `logs --tail 1000` and extracts only the delimited, gzip-compressed JSON payload. Nebius allows 65,536 bytes of injected files per job in total, and `submit.sh` refuses a set over that before creating a job. One take's pairs are about 300 KB, so set `PAIRS_BUCKET` to a private Object Storage bucket that holds the pairs under `TAKE_ID/`; the job then mounts it read-only. The validator accepts only `COMPLETED`, the state Nebius documents as a successful job.
 
 ## PLUMBING TEST results
 
@@ -159,7 +159,25 @@ Stephen recorded three takes (`IMG_0525` to `IMG_0527`) on a phone at 30 fps on 
 
 The simulated G1 stayed up on all three takes, against 7 and 14 falls on the Pexels clips. All three still fail the whole-take cutoffs. `take_0526` and `take_0527` are over the 0.50 s out-of-balance cutoff by 0.053 s and 0.027 s. `take_0527` has no single failing second: its out-of-balance time only crosses the cutoff when the seconds are added up. The per-second rows are the re-show candidates the grade produces.
 
-These are Showhand's measurements of a simulated replay. They do not say whether a human grader would accept the take, and the thresholds were not changed after these runs. The visual judge and fusion have not run on these takes, so no Cosmos or Nemotron output is reported for them.
+These are Showhand's measurements of a simulated replay. They do not say whether a human grader would accept the take, and the thresholds were not changed after these runs.
+
+### Visual judge and fusion on Stephen's takes
+
+`nvidia/Cosmos-Reason1-7B` at revision `375e24000b24baed78f4618d3dd779e47cd96323` ran in bfloat16 on one Nebius L40S, one Serverless Job per take, reading the frame pairs from a private bucket mounted read-only. Each job loaded the model in 282 to 283 s and answered each one-second window in 1.2 to 3.5 s. Job wall times were 315 s, 313 s and 312 s, 940 s in all. At the published L40S VM price ($1.35 per GPU hour plus $0.012 per vCPU hour, 8 vCPUs) that is about $0.38. That figure is an estimate from the price list, not a billing reading.
+
+| Field | `take_0525` | `take_0526` | `take_0527` |
+| --- | --- | --- | --- |
+| Cosmos windows that match | 6 of 7 | 7 of 7 | 5 of 6 |
+| Cosmos mismatch | 4 to 5 s: upper body, lower body, orientation | none | 3 to 4 s: upper body, lower body, orientation |
+| Nebius job | `aijob-e00d1f0neh67r4nnrt` | `aijob-e00dpjhqxkn5xgvb76` | `aijob-e00xc8v043dvrrdgn5` |
+| Fusion status | deterministic fallback after 2 guard refusals | passed after one retry | passed after one retry |
+| Fused decision | re-show 1 to 2 s and 4 to 5 s | re-show 0 to 1 s | re-show 3 to 4 s |
+| Token Factory request ids | `5f8b02c559b5532e97fc393dd83d92cd`, `55e67f4ad5ca373c73f65c11b0934400` | `ef1546107a4724d7d1585335e2afb568`, `639193fa38ca5f6abc8e276b697ab41d` | `17e8b467742ee10f7a3e250ebf86cd73`, `a455ed7681a48218f6ab822aa9aa8e9e` |
+| Fusion cost | $0.00030144 | $0.00028386 | $0.00028020 |
+
+Both visual mismatches show the same thing in their frames: Stephen squats facing the camera while the G1 squats turned about 90 degrees. The deterministic grade has no yaw term, so this is a failure the visual judge sees and the metrics cannot.
+
+The grounding guard refused the first Nemotron answer on every take. On `take_0526` and `take_0527` it answered accept while measured evidence failed. On `take_0525` it twice proposed re-showing 2 to 3 s, a second with no negative evidence. Told the refusal reason, Nemotron gave grounded windows for `take_0526` and `take_0527`; `take_0525` fell back to re-showing every negative window. Nemotron was not deterministic at temperature 0: an earlier run on `take_0525` (request `503cf0e1add30b7ca120deaabebf59ca`) passed on its first answer with re-show 1 to 2 s. The fused answers can also leave out a failing second: `take_0526`'s re-shows 0 to 1 s but not the failing 2 to 3 s. The retry and the fallback were added on 2026-10-06, before any outside grade existed, and are recorded as an amendment in `config/residual_prereg.yaml`.
 
 ## Residual evaluation
 
@@ -169,9 +187,9 @@ The only current residual inputs are synthetic unit-test rows. Their numbers are
 
 ## Not done
 
-- Stephen's three takes have deterministic grades only. The visual judge and fusion have not run on them.
 - An outside grader has not supplied human accept or re-show labels.
 - The pre-registered residual comparison therefore has no result.
 - The stock Pexels clips cannot establish product accuracy or value.
-- Cosmos L40S loadability is not claimed until the blocked cloud job runs.
+- The two Pexels plumbing clips have no visual verdicts; the jobs above covered Stephen's takes only.
+- The take records for Stephen's takes still list the visual judge as blocked; they have not been regenerated with the job ids above.
 - Exact runtime provenance for the external GEM-X and GEAR-SONIC installations was not captured for these plumbing runs.
