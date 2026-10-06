@@ -19,3 +19,15 @@ minimum_valid_bootstrap_fraction: 0.95
 resampling_unit: whole_take
 missing_labels: reject
 synthetic_data_policy: unit_tests_only_never_report_as_results
+amendments:
+  - date: 2026-10-06
+    before_any_outside_human_grade: true
+    reason: >-
+      On the first three real takes the grounding guard refused 2 of 3 Nemotron answers
+      (accept against failing evidence), which left the fused judge without a decision.
+    fused_judge_procedure:
+      - one Nemotron answer, guarded
+      - if refused, one retry that is told the refusal reason, guarded
+      - if refused again, a deterministic re-show of every negative cited window
+      - fused_accept is the final decision of that procedure
+    unchanged: [outcome, baseline, effect, interval, bootstrap, frozen_thresholds]
