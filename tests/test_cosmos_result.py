@@ -47,10 +47,11 @@ def _result(manifest: bytes) -> dict:
 
 def test_cosmos_result_requires_terminal_success_and_matching_manifest() -> None:
     manifest = _manifest()
-    validate({"status": {"state": "SUCCEEDED"}}, _result(manifest), manifest, "take-1")
+    validate({"status": {"state": "COMPLETED"}}, _result(manifest), manifest, "take-1")
 
 
-def test_cosmos_result_rejects_nonterminal_job() -> None:
+@pytest.mark.parametrize("state", ["RUNNING", "FAILED", "ERROR", "SUCCEEDED"])
+def test_cosmos_result_rejects_any_state_but_completed(state: str) -> None:
     manifest = _manifest()
-    with pytest.raises(ValueError, match="not SUCCEEDED"):
-        validate({"status": {"state": "RUNNING"}}, _result(manifest), manifest, "take-1")
+    with pytest.raises(ValueError, match="not COMPLETED"):
+        validate({"status": {"state": state}}, _result(manifest), manifest, "take-1")

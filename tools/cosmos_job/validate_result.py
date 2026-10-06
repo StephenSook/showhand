@@ -27,8 +27,10 @@ def _job_state(job: dict) -> str:
 
 def validate(job: dict, result: dict, manifest_bytes: bytes, take_id: str) -> None:
     state = _job_state(job)
-    if state != "SUCCEEDED":
-        raise ValueError(f"Nebius job final state is {state}, not SUCCEEDED")
+    # Nebius documents COMPLETED as "the job has successfully completed"
+    # (https://docs.nebius.com/serverless/lifecycle#job-statuses).
+    if state != "COMPLETED":
+        raise ValueError(f"Nebius job final state is {state}, not COMPLETED")
     manifest = json.loads(manifest_bytes)
     windows = manifest.get("windows")
     if not isinstance(windows, list) or not windows:

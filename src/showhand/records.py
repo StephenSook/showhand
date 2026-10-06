@@ -147,17 +147,19 @@ def validate_take_record(record: dict[str, Any]) -> None:
     if bool(metrics.get("pass")) == bool(metrics.get("reason_codes")):
         raise ValueError("metrics pass and reason_codes disagree")
     visual_job = record["visual_judge"].get("job", {})
+    # Terminal job states as Nebius documents them; COMPLETED is the success state.
     if visual_job.get("id") and visual_job.get("final_state") not in {
-        "SUCCEEDED",
+        "COMPLETED",
         "FAILED",
         "CANCELLED",
+        "ERROR",
     }:
         raise ValueError("Nebius visual job must have a terminal final_state")
     visual_status = record["visual_judge"].get("status")
     fusion_status = record["fusion"].get("status")
     if visual_status == "completed":
-        if visual_job.get("final_state") != "SUCCEEDED":
-            raise ValueError("completed visual result requires a SUCCEEDED job")
+        if visual_job.get("final_state") != "COMPLETED":
+            raise ValueError("completed visual result requires a COMPLETED job")
         if record["artifacts"].get("visual_output") is None:
             raise ValueError("completed visual result requires a visual artifact")
     elif visual_status == "blocked_before_job_create":
