@@ -1,0 +1,65 @@
+{
+  "model_id": "nvidia/Cosmos-Reason1-7B",
+  "timing": {
+    "model_load_s": 281.959456796
+  },
+  "verdict_counts": {
+    "match": 5,
+    "mismatch": 1,
+    "total": 6
+  },
+  "windows": [
+    {
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing upright with arms slightly away from their bodies, indicating a neutral stance. The robot's posture aligns closely with the human's, suggesting they are in similar poses.",
+      "latency_s": 2.7668912490000253
+    },
+    {
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose matches the human's in terms of arm extension and body posture. Both the human and the robot have their arms raised straight out to the sides, parallel to the ground, with hands open. The upper bodies are upright, and the lower bodies are slightly bent forward, indicating a similar stance. There is no significant difference in the orientation or overall posture between the two subjects.",
+      "latency_s": 2.4488511609999932
+    },
+    {
+      "start_s": 2.0,
+      "end_s": 3.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms slightly away from the body, suggesting a neutral or ready position. The upper bodies are aligned straight, and the lower bodies show no significant bending or leaning. There is no indication of occlusion or insufficient view affecting the comparison.",
+      "latency_s": 2.181058139000015
+    },
+    {
+      "start_s": 3.0,
+      "end_s": 4.0,
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's pose does not match the human's due to differences in upper body posture, lower body positioning, and overall orientation. The robot appears to be in a more dynamic stance compared to the human, who is kneeling with arms extended forward.",
+      "latency_s": 2.056827419000001
+    },
+    {
+      "start_s": 4.0,
+      "end_s": 5.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose closely matches the human's, with both having their arms extended outward and legs positioned in a stable stance. The upper bodies are upright, and the lower bodies show a slight forward lean, indicating readiness for movement. The orientation of both figures is aligned, suggesting they are facing the same direction.",
+      "latency_s": 2.078319884999985
+    },
+    {
+      "start_s": 5.0,
+      "end_s": 5.9,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing upright with their arms relaxed at their sides. The upper bodies are aligned straight, and the lower bodies are positioned symmetrically, indicating a matching pose.",
+      "latency_s": 1.5353914480000412
+    }
+  ]
+}

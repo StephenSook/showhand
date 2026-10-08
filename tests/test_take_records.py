@@ -7,15 +7,19 @@ from pathlib import Path
 
 import pytest
 
+from tools.summarize_visual import summarize_visual
+
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
-MIN_RESULT_FILES = 28
+MIN_RESULT_FILES = 31
 MAX_FILE_BYTES = 64 * 1024
 MAX_STRING_LENGTH = 2000
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/=]{200,}")
 FORBIDDEN_SEGMENTS = {"clips", "frames", "images", "pairs", "renders", "video"}
 FORBIDDEN_PATH = re.compile(
-    r"(?:^|[\\/])(?:clips|frames|images|pairs|renders|video)(?:[\\/]|$)", re.IGNORECASE
+    r"(?:(?:^|[\\/])(?:clips|frames|images|pairs|renders|video)(?=[\\/]|$)"
+    r"|(?<![A-Za-z0-9_])(?:clips|frames|images|pairs|renders|video)(?=[\\/]))",
+    re.IGNORECASE,
 )
 LOCAL_PATH = re.compile(r"(?:[A-Za-z]:[\\/]|/mnt/c/|/home/)", re.IGNORECASE)
 
@@ -78,3 +82,60 @@ def test_privacy_guard_rejects_planted_base64_in_temporary_copy(tmp_path: Path) 
 
     with pytest.raises(AssertionError, match="base64-looking run"):
         _assert_private_results(copied_results)
+
+
+def test_visual_summarizer_drops_planted_path_fields(tmp_path: Path) -> None:
+    source = tmp_path / "visual.json"
+    destination = tmp_path / "visual_summary.json"
+    source.write_text(
+        json.dumps(
+            {
+                "model_id": "example/model",
+                "frame_path": r"C:\private\frames\frame-001.jpg",
+                "verdicts": [
+                    {
+                        "start_s": 0.0,
+                        "end_s": 1.0,
+                        "match": True,
+                        "reason_codes": [],
+                        "summary": "poses match",
+                        "latency_s": 1.25,
+                        "pair_path": r"pairs\window-000.jpg",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summarize_visual(source, destination)
+
+    summary = json.loads(destination.read_text(encoding="utf-8"))
+    assert summary["model_id"] == "example/model"
+    assert summary["verdict_counts"] == {"match": 1, "mismatch": 0, "total": 1}
+    assert "frame_path" not in summary
+    assert "pair_path" not in summary["windows"][0]
+
+
+def test_visual_summarizer_rejects_path_in_kept_string(tmp_path: Path) -> None:
+    source = tmp_path / "visual.json"
+    destination = tmp_path / "visual_summary.json"
+    source.write_text(
+        json.dumps(
+            {
+                "model_id": "example/model",
+                "verdicts": [
+                    {
+                        "start_s": 0.0,
+                        "end_s": 1.0,
+                        "match": False,
+                        "summary": r"inspect frames\window-000.jpg",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="private artifact path"):
+        summarize_visual(source, destination)

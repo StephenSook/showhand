@@ -1,0 +1,69 @@
+{
+  "model_id": "nvidia/Cosmos-Reason1-7B",
+  "timing": {
+    "model_load_s": 282.210436766
+  },
+  "verdict_counts": {
+    "match": 7,
+    "mismatch": 0,
+    "total": 7
+  },
+  "windows": [
+    {
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing upright with their arms slightly away from their bodies, indicating a neutral stance. The upper bodies are aligned straight, and the lower bodies are positioned symmetrically, suggesting balance and stability. There is no indication of movement or dynamic posture in either figure within this one-second window.",
+      "latency_s": 3.385397975999979
+    },
+    {
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing with arms extended outward, maintaining a similar posture. The upper bodies are upright, and the lower bodies are positioned symmetrically, indicating a matched pose.",
+      "latency_s": 1.5358627549999824
+    },
+    {
+      "start_s": 2.0,
+      "end_s": 3.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot have their arms raised above their heads, palms facing outward, and legs slightly apart. The upper bodies are upright, and the lower bodies are positioned similarly, indicating a matching pose.",
+      "latency_s": 1.6307529700000032
+    },
+    {
+      "start_s": 3.0,
+      "end_s": 4.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing with arms extended outward, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned symmetrically, indicating a matched pose.",
+      "latency_s": 1.579652585999952
+    },
+    {
+      "start_s": 4.0,
+      "end_s": 5.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing with arms extended outward, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned symmetrically, indicating a matching stance.",
+      "latency_s": 1.578377350999972
+    },
+    {
+      "start_s": 5.0,
+      "end_s": 6.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing upright with their arms relaxed at their sides. The upper bodies are aligned straight, and the lower bodies are positioned symmetrically. There is no noticeable difference in posture or alignment between the two subjects.",
+      "latency_s": 1.749813205999999
+    },
+    {
+      "start_s": 6.0,
+      "end_s": 6.2,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms relaxed at their sides, facing forward. The upper bodies are aligned straight, and the lower bodies show no significant bending or twisting. There is no indication of occlusion or insufficient view affecting the comparison.",
+      "latency_s": 2.062157713999966
+    }
+  ]
+}

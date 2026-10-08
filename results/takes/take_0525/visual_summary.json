@@ -1,0 +1,73 @@
+{
+  "model_id": "nvidia/Cosmos-Reason1-7B",
+  "timing": {
+    "model_load_s": 283.131624951
+  },
+  "verdict_counts": {
+    "match": 6,
+    "mismatch": 1,
+    "total": 7
+  },
+  "windows": [
+    {
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms slightly apart, suggesting a neutral or ready position. The robot's head is oriented forward, mirroring the human's gaze direction. There is no indication of significant differences in posture or body alignment between the two.",
+      "latency_s": 3.46025683299996
+    },
+    {
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot have their arms raised above their heads and legs apart, indicating a similar pose.",
+      "latency_s": 1.1646230129999822
+    },
+    {
+      "start_s": 2.0,
+      "end_s": 3.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot are standing with arms extended outward, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned symmetrically, indicating a matched pose.",
+      "latency_s": 1.5910339580000255
+    },
+    {
+      "start_s": 3.0,
+      "end_s": 4.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms slightly extended outward, suggesting a neutral or ready position. The alignment of their upper and lower bodies indicates a synchronized posture.",
+      "latency_s": 1.6950919430000226
+    },
+    {
+      "start_s": 4.0,
+      "end_s": 5.0,
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's pose does not match the human's. The robot is depicted in a dynamic stance with its arms extended forward and legs bent, suggesting movement or balance adjustment. In contrast, the human is kneeling on the floor with arms extended forward, indicating a stable position. The difference in posture and body orientation clearly distinguishes their poses.",
+      "latency_s": 2.4739435660000026
+    },
+    {
+      "start_s": 5.0,
+      "end_s": 6.0,
+      "match": true,
+      "reason_codes": [],
+      "summary": "The robot's pose closely matches the human's, with both having their arms extended outward and legs positioned in a stable stance. The upper bodies are upright, and the lower bodies show a slight forward lean, indicating readiness for movement. The orientation of both figures is consistent, facing the same direction, and there is no significant difference in their overall posture or balance.",
+      "latency_s": 2.3155729549999933
+    },
+    {
+      "start_s": 6.0,
+      "end_s": 6.1,
+      "match": true,
+      "reason_codes": [],
+      "summary": "Both the human and the robot have their arms extended outward and slightly bent at the elbows, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned similarly, suggesting a coordinated stance. The robot's head is oriented forward, aligning with the human's gaze direction. There is no significant difference in posture or orientation between the two figures.",
+      "latency_s": 2.3972223689999623
+    }
+  ]
+}
