@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "telemetry_steps": 9931,
+  "last_telemetry_monotonic_ns": 1716605198500,
+  "sim_frequency_hz": 200.0,
+  "onscreen_viewer_during_control": false,
+  "offscreen_render_during_control": false,
+  "elastic_band_startup_enabled": true,
+  "elastic_band_release_monotonic_ns": 1710099087533,
+  "completion_request_monotonic_ns": 1716003167675,
+  "completion_status": "completed",
+  "expected_final_frame_index": 295,
+  "expected_output_frames": 296,
+  "replay_end_monotonic_ns": 1715999301450,
+  "post_roll_s": 0.6,
+  "run_id": "take0527-20261005-c82fdba-r1",
+  "metadata_write_monotonic_ns": 1717552153758,
+  "telemetry_sha256": "c6afd2ace509d392f8ab8a55314f9c43329273c8b958766137815b4cacb053d7",
+  "telemetry_bytes": 8812568,
+  "fall_condition": "transition into root_height_m < 0.2 before stock reset",
+  "foot_slip_definition": "horizontal contact-foot displacement divided by measured simulator time; both adjacent samples must be in contact",
+  "balance_proxy": "COM projection inside convex hull of oriented contact-foot rectangles"
+}

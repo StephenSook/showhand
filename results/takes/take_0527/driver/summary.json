@@ -1,0 +1,30 @@
+{
+  "deterministic_pass": false,
+  "falls": 0,
+  "label": "Stephen's take",
+  "out_of_balance_seconds": 0.526571,
+  "publish_jitter_max_s": 0.00010325800008104125,
+  "reason_codes": [
+    "out_of_balance"
+  ],
+  "render": "<local path>",
+  "run_id": "take0527-20261005-c82fdba-r1",
+  "soma_to_smpl_precompute_s": 6.033427950000032,
+  "sonic_expected_frames": 296,
+  "sonic_final_frame": 295,
+  "sonic_received_frames": 296,
+  "sonic_replay_50_hz_s": 5.900001067,
+  "stage_timings_s": {
+    "deterministic_metrics_s": 1.522273317,
+    "gem_x_offline_s": 286.326901786,
+    "offline_render_s": 66.701978031,
+    "replay_process_wall_s": 22.492793445,
+    "simulator_start_to_ready_s": 2.641291675,
+    "sonic_start_to_init_done_s": 33.525626206,
+    "write_record_s": 1.469077683
+  },
+  "take_id": "take_0527",
+  "take_record": "<local path>",
+  "tracking_mean_abs_error_rad": 0.232949,
+  "tracking_p95_abs_error_rad": 0.716256
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_telemetry": "<local path>",
+  "source_replay_timing": "<local path>",
+  "render_fps": 30.0,
+  "frames": 187,
+  "width": 640,
+  "height": 480,
+  "selection": "previous telemetry row by monotonic timestamp",
+  "wall_s": 60.89029274800009
+}

@@ -1,0 +1,215 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "cost_usd": 0.00014628,
+      "guard": "refused",
+      "guard_error": "re-show window [2.0, 3.0] must exactly match cited negative evidence",
+      "latency_s": 0.897992,
+      "raw_response": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "annotations": null,
+              "audio": null,
+              "content": "{\"decision\": \"reshow\", \"reshow_windows\": [{\"start_s\": 2.0, \"end_s\": 3.0, \"reason\": \"tracking_p95_abs_error_rad in cited evidence\"}, {\"start_s\": 5.0, \"end_s\": 6.0, \"reason\": \"foot_slip in cited evidence\"}], \"evidence_refs\": [\"metrics:second:2\", \"metrics:second:4\"]}",
+              "function_call": null,
+              "reasoning": null,
+              "reasoning_content": null,
+              "refusal": null,
+              "role": "assistant",
+              "tool_calls": null
+            },
+            "stop_reason": null,
+            "token_ids": null
+          }
+        ],
+        "created": 1791258962,
+        "ec_transfer_params": null,
+        "id": "chatcmpl-9fe1f9e2",
+        "kv_transfer_params": null,
+        "model": "nvidia/Nemotron-3_5-Lightning",
+        "moderation": null,
+        "object": "chat.completion",
+        "prompt_logprobs": null,
+        "prompt_token_ids": null,
+        "service_tier": null,
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 102,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 2030,
+          "prompt_tokens": 2030,
+          "prompt_tokens_details": null,
+          "total_tokens": 2132
+        }
+      },
+      "request_id": "5f8b02c559b5532e97fc393dd83d92cd",
+      "usage": {
+        "completion_tokens": 102,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 2030,
+        "prompt_tokens": 2030,
+        "prompt_tokens_details": null,
+        "total_tokens": 2132
+      }
+    },
+    {
+      "attempt": 2,
+      "cost_usd": 0.00015516,
+      "guard": "refused",
+      "guard_error": "re-show window [2.0, 3.0] must exactly match cited negative evidence",
+      "latency_s": 0.806705,
+      "raw_response": {
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "logprobs": null,
+            "message": {
+              "annotations": null,
+              "audio": null,
+              "content": "{\"decision\": \"reshow\", \"reshow_windows\": [{\"start_s\": 2.0, \"end_s\": 3.0, \"reason\": \"tracking_p95_abs_error_rad in cited evidence\"}, {\"start_s\": 5.0, \"end_s\": 6.0, \"reason\": \"foot_slip in cited evidence\"}], \"evidence_refs\": [\"metrics:second:2\", \"metrics:second:4\"]}",
+              "function_call": null,
+              "reasoning": null,
+              "reasoning_content": null,
+              "refusal": null,
+              "role": "assistant",
+              "tool_calls": null
+            },
+            "stop_reason": null,
+            "token_ids": null
+          }
+        ],
+        "created": 1791258963,
+        "ec_transfer_params": null,
+        "id": "chatcmpl-76817df6",
+        "kv_transfer_params": null,
+        "model": "nvidia/Nemotron-3_5-Lightning",
+        "moderation": null,
+        "object": "chat.completion",
+        "prompt_logprobs": null,
+        "prompt_token_ids": null,
+        "service_tier": null,
+        "system_fingerprint": null,
+        "usage": {
+          "completion_tokens": 102,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 2178,
+          "prompt_tokens": 2178,
+          "prompt_tokens_details": null,
+          "total_tokens": 2280
+        }
+      },
+      "request_id": "55e67f4ad5ca373c73f65c11b0934400",
+      "usage": {
+        "completion_tokens": 102,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 2178,
+        "prompt_tokens": 2178,
+        "prompt_tokens_details": null,
+        "total_tokens": 2280
+      }
+    }
+  ],
+  "cost_usd": 0.00030144,
+  "decided_by": "deterministic_fallback",
+  "guard": "passed",
+  "latency_s": 1.704697,
+  "model": "nvidia/Nemotron-3_5-Lightning",
+  "output": {
+    "decision": "reshow",
+    "evidence_refs": [
+      "metrics:second:1",
+      "visual:second:4"
+    ],
+    "reshow_windows": [
+      {
+        "end_s": 2.0,
+        "reason": "tracking_p95_abs_error_rad in cited evidence",
+        "start_s": 1.0
+      },
+      {
+        "end_s": 5.0,
+        "reason": "upper_body_pose in cited evidence",
+        "start_s": 4.0
+      }
+    ]
+  },
+  "raw_response": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": null,
+          "audio": null,
+          "content": "{\"decision\": \"reshow\", \"reshow_windows\": [{\"start_s\": 2.0, \"end_s\": 3.0, \"reason\": \"tracking_p95_abs_error_rad in cited evidence\"}, {\"start_s\": 5.0, \"end_s\": 6.0, \"reason\": \"foot_slip in cited evidence\"}], \"evidence_refs\": [\"metrics:second:2\", \"metrics:second:4\"]}",
+          "function_call": null,
+          "reasoning": null,
+          "reasoning_content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": null
+        },
+        "stop_reason": null,
+        "token_ids": null
+      }
+    ],
+    "created": 1791258963,
+    "ec_transfer_params": null,
+    "id": "chatcmpl-76817df6",
+    "kv_transfer_params": null,
+    "model": "nvidia/Nemotron-3_5-Lightning",
+    "moderation": null,
+    "object": "chat.completion",
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "service_tier": null,
+    "system_fingerprint": null,
+    "usage": {
+      "completion_tokens": 102,
+      "completion_tokens_details": {
+        "accepted_prediction_tokens": null,
+        "audio_tokens": null,
+        "reasoning_tokens": 0,
+        "rejected_prediction_tokens": null
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 2178,
+      "prompt_tokens": 2178,
+      "prompt_tokens_details": null,
+      "total_tokens": 2280
+    }
+  },
+  "request_id": "55e67f4ad5ca373c73f65c11b0934400",
+  "status": "fallback_after_guard_refusals"
+}

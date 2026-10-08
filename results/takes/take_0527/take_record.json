@@ -1,0 +1,111 @@
+{
+  "artifact_sha256": {
+    "hpe_results": "2dc25c99073df0ad84eff65692835c55deef2d0ec621be2350ef8da59402ba3d",
+    "metrics": "2156bd7a38124d37e0053414168b71e347f8e38c6cd258457bfadc20fb7c8da7",
+    "render_meta": "a890531caed1a92413d9db680e7f1c85e356d544aa933717a57deda78bf05532",
+    "render_timestamps": "a3f74c0e42cfe9d11fac11c4aa5a4190a5a10efeba6d4fc271dee105afa22135",
+    "replay_timing": "d33a7cab572ab98f6f847bac857e239d6232728e1b7aa9b916f91923b557b7ca",
+    "retarget_csv": "fa55c9a7a55642a767a5c460f5b4e1ba70526d50192b458d20aec4cce31315dc",
+    "sim_metadata": "6a2fe95d1bc7cefec3157837b24f2b092cd9ba3597e215e7063805d0eb1b5bd4",
+    "sim_render": "7484f8c98d1ee3dcef0345c789965cecbe21ab4fffc567650a30d83644195acc",
+    "sim_step_telemetry": "c6afd2ace509d392f8ab8a55314f9c43329273c8b958766137815b4cacb053d7",
+    "sonic_console": "62d1b405984714fde314093d4616bcaded7e4d46d7754644c1a698f16581bfeb",
+    "sonic_input_sequence": "796f2413580104eaeca98f7e037d7568fb9304776fa339e60f8a21551ce79790"
+  },
+  "artifacts": {
+    "hpe_results": "artifacts/runs/take_0527/gemx/take_0527/hpe_results.pt",
+    "metrics": "artifacts/runs/take_0527/metrics.json",
+    "render_meta": "artifacts/runs/take_0527/sim/render_meta.json",
+    "render_timestamps": "artifacts/runs/take_0527/sim/render_timestamps.csv",
+    "replay_timing": "artifacts/runs/take_0527/replay_timing.json",
+    "retarget_csv": "artifacts/runs/take_0527/gemx/take_0527/take_0527_retarget_g1.csv",
+    "sim_metadata": "artifacts/runs/take_0527/sim/sim_meta.json",
+    "sim_render": "artifacts/runs/take_0527/sim/render.mp4",
+    "sim_step_telemetry": "artifacts/runs/take_0527/sim/telemetry.csv",
+    "sonic_console": "artifacts/runs/take_0527/sonic_logs/console.log",
+    "sonic_csv_logs": "artifacts/runs/take_0527/sonic_logs",
+    "sonic_input_sequence": "artifacts/runs/take_0527/smpl_sequence.npz",
+    "visual_output": null
+  },
+  "cleanup": {
+    "gpu_hours_used": 0.0,
+    "nebius_endpoints_started": 0,
+    "nebius_jobs_started": 0,
+    "sim_process_final_state": "exit_0",
+    "sonic_process_final_state": "exit_0"
+  },
+  "code_commit_sha": "c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1",
+  "code_tree_clean": true,
+  "cost_usd": {
+    "nebius_gpu": 0.0,
+    "token_factory": 0.0,
+    "total": 0.0
+  },
+  "fusion": {
+    "model_id": "nvidia/Nemotron-3_5-Lightning",
+    "status": "not_run_missing_visual_verdicts"
+  },
+  "label": "Stephen's take",
+  "metrics": {
+    "falls": 0,
+    "foot_slip_max_m_s": 0.979841,
+    "foot_slip_seconds": 0.489463,
+    "out_of_balance_seconds": 0.526571,
+    "pass": false,
+    "reason_codes": [
+      "out_of_balance"
+    ],
+    "retargeter": "NVIDIA SOMA Retargeter NewtonPipeline soma_to_unitree_g1",
+    "root_height_min_m": 0.48192,
+    "root_tilt_max_deg": 23.326847,
+    "tracking_mean_abs_error_rad": 0.232949,
+    "tracking_p95_abs_error_rad": 0.716256
+  },
+  "replay_validation": {
+    "max_allowed_jitter_s": 0.01,
+    "post_roll_evaluated_s": 0.605898,
+    "publish_jitter_max_s": 0.00010325800008104125,
+    "publish_jitter_p95_s": 1.996000094095507e-06,
+    "publisher_warmup_s": 0.5,
+    "replay_timing_sha256": "d33a7cab572ab98f6f847bac857e239d6232728e1b7aa9b916f91923b557b7ca",
+    "run_id": "take0527-20261005-c82fdba-r1",
+    "sonic_final_frame": 295,
+    "sonic_first_frame": 0,
+    "sonic_received_frames": 296,
+    "telemetry_bytes": 8812568,
+    "telemetry_sha256": "c6afd2ace509d392f8ab8a55314f9c43329273c8b958766137815b4cacb053d7",
+    "telemetry_steps": 9931
+  },
+  "schema_version": 1,
+  "source": {
+    "container_duration_s": 5.933333,
+    "container_frames": 178,
+    "fps": 30.0,
+    "frames": 178,
+    "height": 1920,
+    "original_wsl_path": "<local path>",
+    "path": "artifacts/runs/take_0527/source.mp4",
+    "pose_duration_s": 5.9,
+    "sha256": "3422334a6e9e4a73d25de48da5e3303f6b567ac160449e60101afa70bbc835bf",
+    "width": 1080
+  },
+  "take_id": "take_0527",
+  "threshold_commit_sha": "0c3a5cebddfa1b8fcac32b5ac2f64d1f2c9675f9",
+  "threshold_path": "config/thresholds.yaml",
+  "threshold_sha256": "206c194a8863e9a7aa2ac2c9bb88edff10271aad224d34194fad215fe2076b76",
+  "timings_s": {
+    "deterministic_metrics_s": 1.522273317,
+    "gem_x_offline_s": 286.326901786,
+    "offline_render_s": 66.701978031,
+    "replay_process_wall_s": 22.492793445,
+    "simulator_start_to_ready_s": 2.641291675,
+    "soma_to_smpl_precompute_s": 6.033427950000032,
+    "sonic_replay_50_hz_s": 5.900001067,
+    "sonic_start_to_init_done_s": 33.525626206
+  },
+  "visual_judge": {
+    "job": {},
+    "model_id": "nvidia/Cosmos-Reason1-7B",
+    "status": "blocked_before_job_create"
+  }
+}

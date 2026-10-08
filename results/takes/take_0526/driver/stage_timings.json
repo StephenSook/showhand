@@ -1,0 +1,9 @@
+{
+  "deterministic_metrics_s": 1.8744484,
+  "gem_x_offline_s": 289.83551371,
+  "offline_render_s": 69.507962953,
+  "replay_process_wall_s": 24.926497182,
+  "simulator_start_to_ready_s": 2.64718245,
+  "sonic_start_to_init_done_s": 33.058818257,
+  "write_record_s": 1.390667483
+}
