@@ -1,0 +1,58 @@
+{
+  "take_id": "take_0525",
+  "sources": {
+    "take_id": "take_record.json take_id"
+  },
+  "stages": {
+    "replay": {
+      "ran": true,
+      "completion_status": "completed",
+      "sources": {
+        "ran": "replay_timing.json completion_status",
+        "completion_status": "replay_timing.json completion_status"
+      }
+    },
+    "physics_metrics": {
+      "ran": true,
+      "pass": false,
+      "reason_codes": [
+        "foot_slip",
+        "out_of_balance"
+      ],
+      "sources": {
+        "ran": "metrics.json overall.pass",
+        "pass": "metrics.json overall.pass",
+        "reason_codes": "metrics.json overall.reason_codes"
+      }
+    },
+    "visual_judge": {
+      "ran": true,
+      "match_count": 6,
+      "mismatch_count": 1,
+      "window_count": 7,
+      "sources": {
+        "ran": "visual_summary.json windows",
+        "match_count": "visual_summary.json verdict_counts.match",
+        "mismatch_count": "visual_summary.json verdict_counts.mismatch",
+        "window_count": "visual_summary.json verdict_counts.total"
+      }
+    },
+    "fusion": {
+      "ran": true,
+      "status": "fallback_after_guard_refusals",
+      "decided_by": "deterministic_fallback",
+      "decision": "reshow",
+      "request_ids": [
+        "5f8b02c559b5532e97fc393dd83d92cd",
+        "55e67f4ad5ca373c73f65c11b0934400"
+      ],
+      "sources": {
+        "ran": "fusion.json status",
+        "status": "fusion.json status",
+        "decided_by": "fusion.json decided_by",
+        "decision": "fusion.json output.decision",
+        "request_ids": "fusion.json attempts.0.request_id and attempts.1.request_id"
+      }
+    }
+  }
+}

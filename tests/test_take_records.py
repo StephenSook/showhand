@@ -11,7 +11,7 @@ from tools.summarize_visual import summarize_visual
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
-MIN_RESULT_FILES = 31
+MIN_RESULT_FILES = 34
 MAX_FILE_BYTES = 64 * 1024
 MAX_STRING_LENGTH = 2000
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/=]{200,}")

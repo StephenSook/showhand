@@ -1,0 +1,57 @@
+{
+  "take_id": "take_0526",
+  "sources": {
+    "take_id": "take_record.json take_id"
+  },
+  "stages": {
+    "replay": {
+      "ran": true,
+      "completion_status": "completed",
+      "sources": {
+        "ran": "replay_timing.json completion_status",
+        "completion_status": "replay_timing.json completion_status"
+      }
+    },
+    "physics_metrics": {
+      "ran": true,
+      "pass": false,
+      "reason_codes": [
+        "out_of_balance"
+      ],
+      "sources": {
+        "ran": "metrics.json overall.pass",
+        "pass": "metrics.json overall.pass",
+        "reason_codes": "metrics.json overall.reason_codes"
+      }
+    },
+    "visual_judge": {
+      "ran": true,
+      "match_count": 7,
+      "mismatch_count": 0,
+      "window_count": 7,
+      "sources": {
+        "ran": "visual_summary.json windows",
+        "match_count": "visual_summary.json verdict_counts.match",
+        "mismatch_count": "visual_summary.json verdict_counts.mismatch",
+        "window_count": "visual_summary.json verdict_counts.total"
+      }
+    },
+    "fusion": {
+      "ran": true,
+      "status": "passed_after_retry",
+      "decided_by": "nemotron",
+      "decision": "reshow",
+      "request_ids": [
+        "ef1546107a4724d7d1585335e2afb568",
+        "639193fa38ca5f6abc8e276b697ab41d"
+      ],
+      "sources": {
+        "ran": "fusion.json status",
+        "status": "fusion.json status",
+        "decided_by": "fusion.json decided_by",
+        "decision": "fusion.json output.decision",
+        "request_ids": "fusion.json attempts.0.request_id and attempts.1.request_id"
+      }
+    }
+  }
+}

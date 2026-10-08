@@ -5,10 +5,11 @@ contain source media, extracted frames, rendered media, pose data, meshes, archi
 binary data. Only the allowlisted JSON records were considered. Every candidate was parsed and
 checked before it was copied. Each committed file is smaller than 64 KB.
 
-The records preserve two stages that did not update the same file. `take_record.json` was written
-before the visual and fusion stages. It still reports that the visual job was blocked and fusion
-did not run. The later `fusion.json` is the record of the Token Factory attempts and final guarded
-decision. Read each record for the stage it actually captures.
+The historical `take_record.json` files were written before the visual and fusion stages, so they
+still report a blocked visual job and an unrun fusion stage. Each `final_state.json` preserves that
+history while pointing to the later replay, metrics, visual-summary, and fusion values that describe
+the take after all completed stages. Read `final_state.json` first instead of treating the historical
+record as the current state.
 
 ## File map
 
@@ -16,7 +17,9 @@ decision. Read each record for the stage it actually captures.
 | --- | --- |
 | `take_record.json` | Aggregate replay provenance, deterministic metrics, artifact hashes, and the pre-visual stage status. |
 | `metrics.json` | Whole-take and one-second deterministic measurements against the frozen thresholds. |
+| `visual_summary.json` | Allowlisted model, timing, verdict-count, and per-window visual fields with every path and raw response dropped. |
 | `fusion.json` | Nemotron attempts, grounding-guard results, final decision, token usage, request ids, latency, and cost. |
+| `final_state.json` | Later stage outcomes and the safe source file and key for each included value. |
 | `replay_timing.json` | Replay run id, source and output counts, commit state, timing, jitter, and simulator receipt data. |
 | `driver/stage_timings.json` | Driver wall times for GEM-X, replay, render, metrics, and record writing. |
 | `driver/summary.json` | Compact driver summary for the replay run and deterministic result. |
@@ -35,8 +38,9 @@ from each copied `fusion.json`.
 | `take_0526` | `take0526-20261005-c82fdba-r1` | `c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1` | `ef1546107a4724d7d1585335e2afb568`, `639193fa38ca5f6abc8e276b697ab41d` |
 | `take_0527` | `take0527-20261005-c82fdba-r1` | `c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1` | `17e8b467742ee10f7a3e250ebf86cd73`, `a455ed7681a48218f6ab822aa9aa8e9e` |
 
-No Nebius visual job id is asserted in this directory. The only candidate record containing that
-stage's job metadata was `visual.json`, and all three copies were rejected by the privacy check.
+No Nebius visual job id is asserted in this directory. The local `visual.json` files contain model
+and verdict timing but no job id, job state, GPU type, GPU seconds, job wall time, cost, or price
+source. The summaries omit those missing fields.
 
 ## Rejected records
 
@@ -47,7 +51,9 @@ stage's job metadata was `visual.json`, and all three copies were rejected by th
 - `take_0527/visual.json` was rejected because six `pair_path` string values contained the
   forbidden `pairs` path segment.
 
-Nothing from those rejected files was copied into this directory.
+The original files were not copied. `tools/summarize_visual.py` retained only its explicit
+allowlist, dropped every path and raw response field, checked every kept string again, and wrote the
+three `visual_summary.json` files.
 
 ## Local path replacements
 
