@@ -9,6 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_RE = re.compile(r"^(\S+\.(?:json|yaml|yml)) ([A-Za-z0-9_.]+)$")
+MIN_MEASURED_TAKE_ROWS = 110
 
 
 def _cells(line: str) -> list[str] | None:
@@ -46,6 +47,7 @@ def _matches(actual, expected) -> bool:
 def test_measured_json_and_yaml_rows_match_files() -> None:
     mismatches = []
     checked = 0
+    checked_take_rows = 0
     for line in (ROOT / "FACTS.md").read_text(encoding="utf-8").splitlines():
         cells = _cells(line)
         if cells is None or len(cells) != 4 or cells[3] != "MEASURED":
@@ -57,7 +59,10 @@ def test_measured_json_and_yaml_rows_match_files() -> None:
         actual = _walk(_load(ROOT / rel), key)
         expected = json.loads(cells[1])
         checked += 1
+        if rel.startswith("results/takes/"):
+            checked_take_rows += 1
         if not _matches(actual, expected):
             mismatches.append(f"{cells[0]}: {rel} {key} is {actual!r}, FACTS.md has {expected!r}")
     assert checked > 0
+    assert checked_take_rows >= MIN_MEASURED_TAKE_ROWS
     assert not mismatches, "\n".join(mismatches)

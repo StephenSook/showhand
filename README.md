@@ -135,7 +135,9 @@ The visual verdicts, fusion outputs, and GPU costs are not reported here because
 
 ## Stephen's takes
 
-Stephen recorded three takes (`IMG_0525` to `IMG_0527`) on a phone at 30 fps on 2026-10-05. Each ran through `tools/wsl/run_take.sh`: GEM-X, SOMA to G1 retargeting, the 50 Hz SONIC replay in MuJoCo, the offline render, a side-by-side clip of source and simulation, and the deterministic grade against the frozen thresholds. The source videos and run folders stay under the ignored `artifacts/` folder and are not committed.
+Stephen recorded three takes (`IMG_0525` to `IMG_0527`) on a phone at 30 fps on 2026-10-05. Each ran through `tools/wsl/run_take.sh`: GEM-X, SOMA to G1 retargeting, the 50 Hz SONIC replay in MuJoCo, the offline render, a side-by-side clip of source and simulation, and the deterministic grade against the frozen thresholds. The source videos and full run folders stay under the ignored `artifacts/` folder and are not committed.
+
+The sanitized text records are documented in [`results/takes/`](results/takes/README.md). The replay and deterministic numbers below come from the committed `replay_timing.json` and `metrics.json` files there. The fusion status, decision, request ids, and cost come from the committed `fusion.json` files. The three `visual.json` candidates failed the privacy gate, so the Cosmos match counts, mismatch descriptions, Nebius job ids, and visual-job times below remain unverified repository claims.
 
 | Field | `take_0525` | `take_0526` | `take_0527` |
 | --- | ---: | ---: | ---: |
@@ -174,6 +176,8 @@ These are Showhand's measurements of a simulated replay. They do not say whether
 | Fused decision | re-show 1 to 2 s and 4 to 5 s | re-show 0 to 1 s | re-show 3 to 4 s |
 | Token Factory request ids | `5f8b02c559b5532e97fc393dd83d92cd`, `55e67f4ad5ca373c73f65c11b0934400` | `ef1546107a4724d7d1585335e2afb568`, `639193fa38ca5f6abc8e276b697ab41d` | `17e8b467742ee10f7a3e250ebf86cd73`, `a455ed7681a48218f6ab822aa9aa8e9e` |
 | Fusion cost | $0.00030144 | $0.00028386 | $0.00028020 |
+
+The committed fusion records support the final four rows. The accepted records do not support the two Cosmos rows or the Nebius job row.
 
 Both visual mismatches show the same thing in their frames: Stephen squats facing the camera while the G1 squats turned about 90 degrees. The deterministic grade has no yaw term, so this is a failure the visual judge sees and the metrics cannot.
 

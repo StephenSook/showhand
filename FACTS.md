@@ -10,7 +10,7 @@ Tags:
 
 Read the source, not a retelling. Where the README and a committed file disagree, the file wins. Those cases are in [Drift found](#drift-found).
 
-Audited on branch `facts-sheet` at `4913ad4e04e020a94fce724705e67eae70ccde1b` on 2026-10-07. `git rev-parse HEAD` printed that SHA before this file existed.
+The initial audit ran on branch `facts-sheet` at `4913ad4e04e020a94fce724705e67eae70ccde1b` on 2026-10-07. The sanitized take records were added under `results/takes/` on 2026-10-08. The current commit is not embedded in this file.
 
 ## What Showhand does
 
@@ -53,7 +53,7 @@ The joint-name count is the length of the tuple, not a finding about a take. The
 
 `config/residual_prereg.yaml` fixes the comparison before outside human grades exist. `sha256sum` of the worktree file printed `b0a7d011f4d790ac34ce38426ea59e329f24f659e812282c8b2b2ac5d49bd8d5`. The file's own history is three commits: `1092140` added the harness, `29f88b17e65c072fd7d244cb2bf22fc53eb31d17` (2026-10-05 15:41:31 -0400) defined bootstrap handling, and `9fb9c782af1010a6c414c534386d19fa7e4d226d` (2026-10-05 23:55:50 -0400) recorded the retry amendment. That local timestamp is 2026-10-06 03:55:50 UTC. The amendment date inside the file is `2026-10-06`.
 
-The harness has no real-label result. `synthetic_data_policy` says unit tests only, and the status is still waiting for real takes and human grades. The amendment text inside the file states a refusal count. That sentence is part of the committed file. The fusion outputs it describes are not in the repo. See the NOT VERIFIED rows.
+The harness has no real-label result. `synthetic_data_policy` says unit tests only, and the literal status is still waiting for real takes and human grades. The committed fusion records confirm that the first answers for `take_0526` and `take_0527` were accepts that contradicted failing evidence. The first `take_0525` answer was refused for citing a window without matching negative evidence.
 
 | Claim | Value | Source | Tag |
 | --- | --- | --- | --- |
@@ -80,7 +80,9 @@ The harness has no real-label result. `synthetic_data_policy` says unit tests on
 | Amendment reason text | "On the first three real takes the grounding guard refused 2 of 3 Nemotron answers (accept against failing evidence), which left the fused judge without a decision." | config/residual_prereg.yaml amendments.0.reason | MEASURED |
 | Amendment fused-judge procedure | ["one Nemotron answer, guarded", "if refused, one retry that is told the refusal reason, guarded", "if refused again, a deterministic re-show of every negative cited window", "fused_accept is the final decision of that procedure"] | config/residual_prereg.yaml amendments.0.fused_judge_procedure | MEASURED |
 | Amendment fields left unchanged | ["outcome", "baseline", "effect", "interval", "bootstrap", "frozen_thresholds"] | config/residual_prereg.yaml amendments.0.unchanged | MEASURED |
-| Refusal count in the amendment happened on the three takes | not in a committed fusion file | README.md:180 and the amendment reason. Check: open gitignored fusion.json for take_0525, take_0526, and take_0527 and count guard refusals. artifacts/runs was absent in this worktree on 2026-10-07. | NOT VERIFIED |
+| take_0525 first fusion guard error | "re-show window [2.0, 3.0] must exactly match cited negative evidence" | results/takes/take_0525/fusion.json attempts.0.guard_error | MEASURED |
+| take_0526 first fusion guard error | "accept contradicts mandatory negative evidence" | results/takes/take_0526/fusion.json attempts.0.guard_error | MEASURED |
+| take_0527 first fusion guard error | "accept contradicts mandatory negative evidence" | results/takes/take_0527/fusion.json attempts.0.guard_error | MEASURED |
 
 ## Results on the two stock plumbing clips
 
@@ -200,83 +202,129 @@ Both records fail tracking p95, root height, root tilt, foot slip, time out of b
 
 ## Results on Stephen's three takes
 
-Stephen's takes are not in a committed take record. `git grep` for `take_0525`, `take0525`, and `aijob-` hits only `README.md`. `artifacts/` and `artifacts/runs/` were absent in this worktree on 2026-10-07. Per-take `visual.json` and `fusion.json` are gitignored. The README records job ids next to the visual and fusion figures. That does not put the figures in the repo. Every value in this section is NOT VERIFIED. Do not narrate them as measured.
+The repository contains 27 sanitized JSON records under `results/takes/`, nine for each take. The copied replay, metrics, simulator, driver, SONIC, take, and fusion records passed the privacy gate. All three `visual.json` candidates were rejected because their `pair_path` values contained a forbidden path segment. The Cosmos match counts, mismatch descriptions, Nebius visual job ids, and visual-job times therefore remain NOT VERIFIED.
 
-The check for each row is the same: open the gitignored take record, `metrics.json`, `visual.json`, and `fusion.json` for that take and compare the field to the README. The README says at line 194 that those take records still list the visual judge as blocked and have not been regenerated with the job ids. That sentence is also unverified, because the records are not committed.
-
-`git rev-parse c6847f2` printed `c6847f2738f00fcea61dcf107325d6907034e28b`. `git rev-parse c82fdba` printed `c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1`. Those commits exist. That does not show that a replay started from a clean tree at either commit.
+The aggregate `take_record.json` files predate the later visual and fusion stages. They still say that the visual job was blocked and fusion did not run. The separate `fusion.json` files are the later guarded fusion records. Both states are measured below without pretending that one file updated the other.
 
 | Claim | Value | Source | Tag |
 | --- | --- | --- | --- |
-| take_0525 source frames at 30 fps | 184 | README.md:142. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 source frames at 30 fps | 187 | README.md:142. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 source frames at 30 fps | 178 | README.md:142. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 target motion duration | 6.1 s | README.md:143. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 target motion duration | 6.2 s | README.md:143. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 target motion duration | 5.9 s | README.md:143. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 run id | take0525-20261005-c6847f2-r1 | README.md:144. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 run id | take0526-20261005-c82fdba-r1 | README.md:144. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 run id | take0527-20261005-c82fdba-r1 | README.md:144. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 frames published | 306 | README.md:146. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 frames published | 311 | README.md:146. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 frames published | 296 | README.md:146. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 max publish jitter | 0.000039 s | README.md:147. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 max publish jitter | 0.000086 s | README.md:147. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 max publish jitter | 0.000103 s | README.md:147. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 publish deadline misses | 0 | README.md:148. Check the gitignored take record. | NOT VERIFIED |
-| take_0526 publish deadline misses | 0 | README.md:148. Check the gitignored take record. | NOT VERIFIED |
-| take_0527 publish deadline misses | 0 | README.md:148. Check the gitignored take record. | NOT VERIFIED |
-| take_0525 tracking mean absolute error | 0.240200 rad | README.md:149. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 tracking mean absolute error | 0.221003 rad | README.md:149. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 tracking mean absolute error | 0.232949 rad | README.md:149. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 tracking p95 absolute error | 0.695321 rad | README.md:150. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 tracking p95 absolute error | 0.603113 rad | README.md:150. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 tracking p95 absolute error | 0.716256 rad | README.md:150. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 minimum root height | 0.473044 m | README.md:151. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 minimum root height | 0.756251 m | README.md:151. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 minimum root height | 0.481920 m | README.md:151. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 maximum root tilt | 23.134581 degrees | README.md:152. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 maximum root tilt | 7.273088 degrees | README.md:152. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 maximum root tilt | 23.326847 degrees | README.md:152. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 maximum contact-foot slip | 1.486444 m/s | README.md:153. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 maximum contact-foot slip | 1.546044 m/s | README.md:153. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 maximum contact-foot slip | 0.979841 m/s | README.md:153. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 contact-foot slip time | 0.784643 s | README.md:154. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 contact-foot slip time | 0.365411 s | README.md:154. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 contact-foot slip time | 0.489463 s | README.md:154. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 time out of balance | 1.275880 s | README.md:155. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 time out of balance | 0.552972 s | README.md:155. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 time out of balance | 0.526571 s | README.md:155. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 falls | 0 | README.md:156. Check the gitignored metrics. | NOT VERIFIED |
-| take_0526 falls | 0 | README.md:156. Check the gitignored metrics. | NOT VERIFIED |
-| take_0527 falls | 0 | README.md:156. Check the gitignored metrics. | NOT VERIFIED |
-| take_0525 deterministic result | fail: foot slip, out of balance | README.md:157. Check the gitignored metrics reason codes. | NOT VERIFIED |
-| take_0526 deterministic result | fail: out of balance | README.md:157. Check the gitignored metrics reason codes. | NOT VERIFIED |
-| take_0527 deterministic result | fail: out of balance | README.md:157. Check the gitignored metrics reason codes. | NOT VERIFIED |
-| take_0525 seconds that fail on their own | 1 to 2 (tracking p95) | README.md:158. Check the gitignored per-second metrics. | NOT VERIFIED |
-| take_0526 seconds that fail on their own | 0 to 1 (out of balance), 2 to 3 (tracking p95) | README.md:158. Check the gitignored per-second metrics. | NOT VERIFIED |
-| take_0527 seconds that fail on their own | none | README.md:158. Check the gitignored per-second metrics. | NOT VERIFIED |
-| take_0525 Cosmos windows that match | 6 of 7 | README.md:170. Job id in README.md:172 is aijob-e00d1f0neh67r4nnrt. Check gitignored visual.json for that job. | NOT VERIFIED |
-| take_0526 Cosmos windows that match | 7 of 7 | README.md:170. Job id in README.md:172 is aijob-e00dpjhqxkn5xgvb76. Check gitignored visual.json for that job. | NOT VERIFIED |
-| take_0527 Cosmos windows that match | 5 of 6 | README.md:170. Job id in README.md:172 is aijob-e00xc8v043dvrrdgn5. Check gitignored visual.json for that job. | NOT VERIFIED |
-| take_0525 Cosmos mismatch | 4 to 5 s: upper body, lower body, orientation | README.md:171. Check gitignored visual.json for aijob-e00d1f0neh67r4nnrt. | NOT VERIFIED |
-| take_0526 Cosmos mismatch | none | README.md:171. Check gitignored visual.json for aijob-e00dpjhqxkn5xgvb76. | NOT VERIFIED |
-| take_0527 Cosmos mismatch | 3 to 4 s: upper body, lower body, orientation | README.md:171. Check gitignored visual.json for aijob-e00xc8v043dvrrdgn5. | NOT VERIFIED |
-| take_0525 fusion status in the README | deterministic fallback after 2 guard refusals | README.md:173. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0526 fusion status in the README | passed after one retry | README.md:173. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0527 fusion status in the README | passed after one retry | README.md:173. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0525 fused decision in the README | re-show 1 to 2 s and 4 to 5 s | README.md:174. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0526 fused decision in the README | re-show 0 to 1 s | README.md:174. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0527 fused decision in the README | re-show 3 to 4 s | README.md:174. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0525 Token Factory request ids in the README | 5f8b02c559b5532e97fc393dd83d92cd and 55e67f4ad5ca373c73f65c11b0934400 | README.md:175. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0526 Token Factory request ids in the README | ef1546107a4724d7d1585335e2afb568 and 639193fa38ca5f6abc8e276b697ab41d | README.md:175. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0527 Token Factory request ids in the README | 17e8b467742ee10f7a3e250ebf86cd73 and a455ed7681a48218f6ab822aa9aa8e9e | README.md:175. Check gitignored fusion.json. | NOT VERIFIED |
-| take_0525 fusion cost in the README | 0.00030144 USD | README.md:176. Check gitignored fusion.json usage and cost. | NOT VERIFIED |
-| take_0526 fusion cost in the README | 0.00028386 USD | README.md:176. Check gitignored fusion.json usage and cost. | NOT VERIFIED |
-| take_0527 fusion cost in the README | 0.00028020 USD | README.md:176. Check gitignored fusion.json usage and cost. | NOT VERIFIED |
-| Cosmos load, window, and job wall times in the README | load 282 to 283 s, windows 1.2 to 3.5 s, walls 315 s, 313 s, and 312 s, 940 s in all | README.md:166. Check gitignored visual.json model_load_s, verdict latency_s, and the Nebius job record for the three job ids. | NOT VERIFIED |
-| L40S price estimate in the README | about 0.38 USD from 1.35 USD per GPU hour plus 0.012 USD per vCPU hour and 8 vCPUs | README.md:166. The README says this is a price-list estimate, not a billing reading. No price URL or invoice is in the repo. Check the Nebius price page and the billing record for the three job ids. | NOT VERIFIED |
-| Earlier take_0525 fusion request in the README | request 503cf0e1add30b7ca120deaabebf59ca passed on the first answer with re-show 1 to 2 s | README.md:180. Check the saved raw response for that request id. | NOT VERIFIED |
+| take_0525 source frames | 184 | results/takes/take_0525/replay_timing.json source_frames | MEASURED |
+| take_0526 source frames | 187 | results/takes/take_0526/replay_timing.json source_frames | MEASURED |
+| take_0527 source frames | 178 | results/takes/take_0527/replay_timing.json source_frames | MEASURED |
+| take_0525 source fps | 30.0 | results/takes/take_0525/replay_timing.json source_fps | MEASURED |
+| take_0526 source fps | 30.0 | results/takes/take_0526/replay_timing.json source_fps | MEASURED |
+| take_0527 source fps | 30.0 | results/takes/take_0527/replay_timing.json source_fps | MEASURED |
+| take_0525 target motion duration seconds | 6.1 | results/takes/take_0525/replay_timing.json source_duration_s | MEASURED |
+| take_0526 target motion duration seconds | 6.2 | results/takes/take_0526/replay_timing.json source_duration_s | MEASURED |
+| take_0527 target motion duration seconds | 5.9 | results/takes/take_0527/replay_timing.json source_duration_s | MEASURED |
+| take_0525 run id | "take0525-20261005-c6847f2-r1" | results/takes/take_0525/replay_timing.json run_id | MEASURED |
+| take_0526 run id | "take0526-20261005-c82fdba-r1" | results/takes/take_0526/replay_timing.json run_id | MEASURED |
+| take_0527 run id | "take0527-20261005-c82fdba-r1" | results/takes/take_0527/replay_timing.json run_id | MEASURED |
+| take_0525 Showhand commit at replay | "c6847f2738f00fcea61dcf107325d6907034e28b" | results/takes/take_0525/replay_timing.json code_commit_sha | MEASURED |
+| take_0526 Showhand commit at replay | "c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1" | results/takes/take_0526/replay_timing.json code_commit_sha | MEASURED |
+| take_0527 Showhand commit at replay | "c82fdbaaad4f7f9a11db9e097b8e2fad477d8bf1" | results/takes/take_0527/replay_timing.json code_commit_sha | MEASURED |
+| take_0525 tree clean at replay | true | results/takes/take_0525/replay_timing.json code_tree_clean | MEASURED |
+| take_0526 tree clean at replay | true | results/takes/take_0526/replay_timing.json code_tree_clean | MEASURED |
+| take_0527 tree clean at replay | true | results/takes/take_0527/replay_timing.json code_tree_clean | MEASURED |
+| take_0525 frames published | 306 | results/takes/take_0525/replay_timing.json output_frames | MEASURED |
+| take_0526 frames published | 311 | results/takes/take_0526/replay_timing.json output_frames | MEASURED |
+| take_0527 frames published | 296 | results/takes/take_0527/replay_timing.json output_frames | MEASURED |
+| take_0525 max publish jitter seconds | 3.9439997635781765e-05 | results/takes/take_0525/replay_timing.json publish_jitter_max_s | MEASURED |
+| take_0526 max publish jitter seconds | 8.561699996789685e-05 | results/takes/take_0526/replay_timing.json publish_jitter_max_s | MEASURED |
+| take_0527 max publish jitter seconds | 0.00010325800008104125 | results/takes/take_0527/replay_timing.json publish_jitter_max_s | MEASURED |
+| take_0525 publish deadline misses | 0 | results/takes/take_0525/replay_timing.json deadline_misses | MEASURED |
+| take_0526 publish deadline misses | 0 | results/takes/take_0526/replay_timing.json deadline_misses | MEASURED |
+| take_0527 publish deadline misses | 0 | results/takes/take_0527/replay_timing.json deadline_misses | MEASURED |
+| take_0525 tracking mean absolute error radians | 0.2402 | results/takes/take_0525/metrics.json overall.tracking_mean_abs_error_rad | MEASURED |
+| take_0526 tracking mean absolute error radians | 0.221003 | results/takes/take_0526/metrics.json overall.tracking_mean_abs_error_rad | MEASURED |
+| take_0527 tracking mean absolute error radians | 0.232949 | results/takes/take_0527/metrics.json overall.tracking_mean_abs_error_rad | MEASURED |
+| take_0525 tracking p95 absolute error radians | 0.695321 | results/takes/take_0525/metrics.json overall.tracking_p95_abs_error_rad | MEASURED |
+| take_0526 tracking p95 absolute error radians | 0.603113 | results/takes/take_0526/metrics.json overall.tracking_p95_abs_error_rad | MEASURED |
+| take_0527 tracking p95 absolute error radians | 0.716256 | results/takes/take_0527/metrics.json overall.tracking_p95_abs_error_rad | MEASURED |
+| take_0525 minimum root height meters | 0.473044 | results/takes/take_0525/metrics.json overall.root_height_min_m | MEASURED |
+| take_0526 minimum root height meters | 0.756251 | results/takes/take_0526/metrics.json overall.root_height_min_m | MEASURED |
+| take_0527 minimum root height meters | 0.48192 | results/takes/take_0527/metrics.json overall.root_height_min_m | MEASURED |
+| take_0525 maximum root tilt degrees | 23.134581 | results/takes/take_0525/metrics.json overall.root_tilt_max_deg | MEASURED |
+| take_0526 maximum root tilt degrees | 7.273088 | results/takes/take_0526/metrics.json overall.root_tilt_max_deg | MEASURED |
+| take_0527 maximum root tilt degrees | 23.326847 | results/takes/take_0527/metrics.json overall.root_tilt_max_deg | MEASURED |
+| take_0525 maximum contact-foot slip meters per second | 1.486444 | results/takes/take_0525/metrics.json overall.foot_slip_max_m_s | MEASURED |
+| take_0526 maximum contact-foot slip meters per second | 1.546044 | results/takes/take_0526/metrics.json overall.foot_slip_max_m_s | MEASURED |
+| take_0527 maximum contact-foot slip meters per second | 0.979841 | results/takes/take_0527/metrics.json overall.foot_slip_max_m_s | MEASURED |
+| take_0525 contact-foot slip seconds | 0.784643 | results/takes/take_0525/metrics.json overall.foot_slip_seconds | MEASURED |
+| take_0526 contact-foot slip seconds | 0.365411 | results/takes/take_0526/metrics.json overall.foot_slip_seconds | MEASURED |
+| take_0527 contact-foot slip seconds | 0.489463 | results/takes/take_0527/metrics.json overall.foot_slip_seconds | MEASURED |
+| take_0525 time out of balance seconds | 1.27588 | results/takes/take_0525/metrics.json overall.out_of_balance_seconds | MEASURED |
+| take_0526 time out of balance seconds | 0.552972 | results/takes/take_0526/metrics.json overall.out_of_balance_seconds | MEASURED |
+| take_0527 time out of balance seconds | 0.526571 | results/takes/take_0527/metrics.json overall.out_of_balance_seconds | MEASURED |
+| take_0525 falls | 0 | results/takes/take_0525/metrics.json overall.falls | MEASURED |
+| take_0526 falls | 0 | results/takes/take_0526/metrics.json overall.falls | MEASURED |
+| take_0527 falls | 0 | results/takes/take_0527/metrics.json overall.falls | MEASURED |
+| take_0525 deterministic pass | false | results/takes/take_0525/metrics.json overall.pass | MEASURED |
+| take_0526 deterministic pass | false | results/takes/take_0526/metrics.json overall.pass | MEASURED |
+| take_0527 deterministic pass | false | results/takes/take_0527/metrics.json overall.pass | MEASURED |
+| take_0525 deterministic reason codes | ["foot_slip", "out_of_balance"] | results/takes/take_0525/metrics.json overall.reason_codes | MEASURED |
+| take_0526 deterministic reason codes | ["out_of_balance"] | results/takes/take_0526/metrics.json overall.reason_codes | MEASURED |
+| take_0527 deterministic reason codes | ["out_of_balance"] | results/takes/take_0527/metrics.json overall.reason_codes | MEASURED |
+| take_0525 second 0 pass | true | results/takes/take_0525/metrics.json per_second.0.pass | MEASURED |
+| take_0525 second 1 pass | false | results/takes/take_0525/metrics.json per_second.1.pass | MEASURED |
+| take_0525 second 1 reason codes | ["tracking_p95_abs_error_rad"] | results/takes/take_0525/metrics.json per_second.1.reason_codes | MEASURED |
+| take_0525 second 2 pass | true | results/takes/take_0525/metrics.json per_second.2.pass | MEASURED |
+| take_0525 second 3 pass | true | results/takes/take_0525/metrics.json per_second.3.pass | MEASURED |
+| take_0525 second 4 pass | true | results/takes/take_0525/metrics.json per_second.4.pass | MEASURED |
+| take_0525 second 5 pass | true | results/takes/take_0525/metrics.json per_second.5.pass | MEASURED |
+| take_0525 second 6 pass | true | results/takes/take_0525/metrics.json per_second.6.pass | MEASURED |
+| take_0526 second 0 pass | false | results/takes/take_0526/metrics.json per_second.0.pass | MEASURED |
+| take_0526 second 0 reason codes | ["out_of_balance"] | results/takes/take_0526/metrics.json per_second.0.reason_codes | MEASURED |
+| take_0526 second 1 pass | true | results/takes/take_0526/metrics.json per_second.1.pass | MEASURED |
+| take_0526 second 2 pass | false | results/takes/take_0526/metrics.json per_second.2.pass | MEASURED |
+| take_0526 second 2 reason codes | ["tracking_p95_abs_error_rad"] | results/takes/take_0526/metrics.json per_second.2.reason_codes | MEASURED |
+| take_0526 second 3 pass | true | results/takes/take_0526/metrics.json per_second.3.pass | MEASURED |
+| take_0526 second 4 pass | true | results/takes/take_0526/metrics.json per_second.4.pass | MEASURED |
+| take_0526 second 5 pass | true | results/takes/take_0526/metrics.json per_second.5.pass | MEASURED |
+| take_0526 second 6 pass | true | results/takes/take_0526/metrics.json per_second.6.pass | MEASURED |
+| take_0527 second 0 pass | true | results/takes/take_0527/metrics.json per_second.0.pass | MEASURED |
+| take_0527 second 1 pass | true | results/takes/take_0527/metrics.json per_second.1.pass | MEASURED |
+| take_0527 second 2 pass | true | results/takes/take_0527/metrics.json per_second.2.pass | MEASURED |
+| take_0527 second 3 pass | true | results/takes/take_0527/metrics.json per_second.3.pass | MEASURED |
+| take_0527 second 4 pass | true | results/takes/take_0527/metrics.json per_second.4.pass | MEASURED |
+| take_0527 second 5 pass | true | results/takes/take_0527/metrics.json per_second.5.pass | MEASURED |
+| take_0525 take-record visual status | "blocked_before_job_create" | results/takes/take_0525/take_record.json visual_judge.status | MEASURED |
+| take_0526 take-record visual status | "blocked_before_job_create" | results/takes/take_0526/take_record.json visual_judge.status | MEASURED |
+| take_0527 take-record visual status | "blocked_before_job_create" | results/takes/take_0527/take_record.json visual_judge.status | MEASURED |
+| take_0525 take-record fusion status | "not_run_missing_visual_verdicts" | results/takes/take_0525/take_record.json fusion.status | MEASURED |
+| take_0526 take-record fusion status | "not_run_missing_visual_verdicts" | results/takes/take_0526/take_record.json fusion.status | MEASURED |
+| take_0527 take-record fusion status | "not_run_missing_visual_verdicts" | results/takes/take_0527/take_record.json fusion.status | MEASURED |
+| take_0525 later fusion status | "fallback_after_guard_refusals" | results/takes/take_0525/fusion.json status | MEASURED |
+| take_0526 later fusion status | "passed_after_retry" | results/takes/take_0526/fusion.json status | MEASURED |
+| take_0527 later fusion status | "passed_after_retry" | results/takes/take_0527/fusion.json status | MEASURED |
+| take_0525 fusion decided by | "deterministic_fallback" | results/takes/take_0525/fusion.json decided_by | MEASURED |
+| take_0526 fusion decided by | "nemotron" | results/takes/take_0526/fusion.json decided_by | MEASURED |
+| take_0527 fusion decided by | "nemotron" | results/takes/take_0527/fusion.json decided_by | MEASURED |
+| take_0525 fused decision | "reshow" | results/takes/take_0525/fusion.json output.decision | MEASURED |
+| take_0526 fused decision | "reshow" | results/takes/take_0526/fusion.json output.decision | MEASURED |
+| take_0527 fused decision | "reshow" | results/takes/take_0527/fusion.json output.decision | MEASURED |
+| take_0525 fused re-show windows | [{"start_s": 1.0, "end_s": 2.0, "reason": "tracking_p95_abs_error_rad in cited evidence"}, {"start_s": 4.0, "end_s": 5.0, "reason": "upper_body_pose in cited evidence"}] | results/takes/take_0525/fusion.json output.reshow_windows | MEASURED |
+| take_0526 fused re-show windows | [{"start_s": 0.0, "end_s": 1.0, "reason": "out_of_balance in cited evidence"}] | results/takes/take_0526/fusion.json output.reshow_windows | MEASURED |
+| take_0527 fused re-show windows | [{"start_s": 3.0, "end_s": 4.0, "reason": "upper_body_pose in cited evidence"}] | results/takes/take_0527/fusion.json output.reshow_windows | MEASURED |
+| take_0525 first Token Factory request id | "5f8b02c559b5532e97fc393dd83d92cd" | results/takes/take_0525/fusion.json attempts.0.request_id | MEASURED |
+| take_0525 second Token Factory request id | "55e67f4ad5ca373c73f65c11b0934400" | results/takes/take_0525/fusion.json attempts.1.request_id | MEASURED |
+| take_0526 first Token Factory request id | "ef1546107a4724d7d1585335e2afb568" | results/takes/take_0526/fusion.json attempts.0.request_id | MEASURED |
+| take_0526 second Token Factory request id | "639193fa38ca5f6abc8e276b697ab41d" | results/takes/take_0526/fusion.json attempts.1.request_id | MEASURED |
+| take_0527 first Token Factory request id | "17e8b467742ee10f7a3e250ebf86cd73" | results/takes/take_0527/fusion.json attempts.0.request_id | MEASURED |
+| take_0527 second Token Factory request id | "a455ed7681a48218f6ab822aa9aa8e9e" | results/takes/take_0527/fusion.json attempts.1.request_id | MEASURED |
+| take_0525 fusion cost USD | 0.00030144 | results/takes/take_0525/fusion.json cost_usd | MEASURED |
+| take_0526 fusion cost USD | 0.00028386 | results/takes/take_0526/fusion.json cost_usd | MEASURED |
+| take_0527 fusion cost USD | 0.0002802 | results/takes/take_0527/fusion.json cost_usd | MEASURED |
+| take_0525 Cosmos windows that match | 6 of 7 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| take_0526 Cosmos windows that match | 7 of 7 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| take_0527 Cosmos windows that match | 5 of 6 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| take_0525 Cosmos mismatch | 4 to 5 s: upper body, lower body, orientation | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| take_0526 Cosmos mismatch | none | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| take_0527 Cosmos mismatch | 3 to 4 s: upper body, lower body, orientation | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
+| Nebius visual job ids in the README | aijob-e00d1f0neh67r4nnrt, aijob-e00dpjhqxkn5xgvb76, and aijob-e00xc8v043dvrrdgn5 | README.md:174. No accepted copied record contains these ids. | NOT VERIFIED |
+| Cosmos load, window, and job wall times in the README | load 282 to 283 s, windows 1.2 to 3.5 s, walls 315 s, 313 s, and 312 s, 940 s in all | README.md:168. The visual records were rejected, and no Nebius job record is committed. | NOT VERIFIED |
+| L40S price estimate in the README | about 0.38 USD from 1.35 USD per GPU hour plus 0.012 USD per vCPU hour and 8 vCPUs | README.md:168. The README says this is a price-list estimate, not a billing reading. No price URL or invoice is in the repo. Check the Nebius price page and the billing record for the three job ids. | NOT VERIFIED |
+| Earlier take_0525 fusion request in the README | request 503cf0e1add30b7ca120deaabebf59ca passed on the first answer with re-show 1 to 2 s | README.md:184. Check the saved raw response for that request id. | NOT VERIFIED |
 | Phone recording claim | IMG_0525 to IMG_0527 at 30 fps on 2026-10-05 | README.md:138. Check the gitignored source videos and their container metadata. | NOT VERIFIED |
 
 ## Models and services
@@ -347,12 +395,12 @@ The hosted GitHub Actions run for this SHA was not queried.
 - Do not claim an outside person has graded a take. No committed human labels exist. The pre-registration status is still waiting.
 - Do not claim the visual judge or the fused decision agrees with a human grader. That comparison has no result.
 - Do not claim a real Unitree robot ran. The path in this repo is a MuJoCo simulation.
-- Do not claim product results beyond the two committed Pexels plumbing records. Stephen's three takes are README text until their gitignored artifacts are opened.
+- Do not claim that the measured replay and fusion results on Stephen's takes establish product accuracy or value. No outside human comparison exists.
 - Do not claim Cosmos or Nemotron graded the two Pexels clips. Both records are blocked before job creation. GPU time and GPU cost on those records are zero.
-- Do not claim the README's Cosmos match counts, fusion decisions, request ids, job wall times, or fusion dollar amounts for Stephen's takes. They are NOT VERIFIED.
+- Do not claim the README's Cosmos match counts, mismatch descriptions, Nebius visual job ids, or visual-job times for Stephen's takes. The visual records were rejected by the privacy gate. The later fusion decisions, request ids, and fusion costs are MEASURED from the accepted fusion records.
 - Do not claim the about 0.38 USD figure is a bill. The README calls it a price-list estimate, and the price list is not in the repo.
 - Do not claim Nemotron at temperature 0 is deterministic. The README says an earlier answer differed, and that run is NOT VERIFIED here. The code still sends temperature 0.
-- Do not claim Stephen's committed take records contain the Nebius job ids. No such records are committed. The README says the records still list the visual judge as blocked.
+- Do not claim the accepted records contain the Nebius visual job ids. The copied aggregate take records still list the visual judge as blocked, and the visual records were rejected.
 - Do not claim the exact GEM-X or GEAR-SONIC checkout, weights, or planner that produced the plumbing runs. The README says those runtime commits were not captured. The take records hash saved outputs. They do not name those external commits.
 - Do not claim the model card's license, hardware list, or 24 GB BF16 figure. Those pages were not opened.
 - Do not claim the job preset is a 48 GB GPU. `submit.sh` asks for platform `gpu-l40s-a` and preset `1gpu-8vcpu-32gb`.
@@ -374,7 +422,7 @@ The committed file wins. The README cell is the rounded or paraphrased form.
 8. `README.md:130` gives `86.663354` seconds for the `sam_3d_body` failure. That duration is not in the take record. Only the exception string is.
 9. `README.md:28` says a 48 GB L40S. `tools/cosmos_job/submit.sh:46` sets preset `1gpu-8vcpu-32gb`. The 48 GB figure is not in the job file.
 10. `README.md:12` names `NewtonPipeline(skeleton, "soma", "unitree_g1")`. No file in this repo contains that call. `tools/wsl/finish_gemx_retarget.py:27` calls `run_retarget`.
-11. Stephen's metric table (`README.md:140` to `README.md:176`), the job ids, and the fusion costs have no committed JSON. They are not confirmed and they are not contradicted by a committed file. They stay NOT VERIFIED.
+11. Stephen's replay metrics, deterministic grades, later fusion decisions, Token Factory request ids, and fusion costs now match committed records under `results/takes/`. The Cosmos match counts, visual mismatch descriptions, Nebius visual job ids, and visual-job times remain NOT VERIFIED because every `visual.json` candidate was rejected by the privacy gate.
 12. The amendment date `2026-10-06` and commit `9fb9c782af1010a6c414c534386d19fa7e4d226d` at `2026-10-05 23:55:50 -0400` are the same instant in UTC (`2026-10-06 03:55:50`). The local calendar date and the yaml date are not the same label.
 
 README cells that round to six decimal places and match the stored value at those places are not listed. That includes short-clip jitter `0.005299`, long-clip jitter `0.001185`, the failed-retarget `290.748189`, and the long-clip GEM-X total `722.984161`. Short-clip post-roll `0.605870` is the same number as stored `0.60587`.
