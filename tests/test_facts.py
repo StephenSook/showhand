@@ -9,7 +9,21 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_RE = re.compile(r"^(\S+\.(?:json|yaml|yml)) ([A-Za-z0-9_.]+)$")
-MIN_MEASURED_TAKE_ROWS = 110
+MIN_MEASURED_TAKE_ROWS = 128
+REQUIRED_VISUAL_SUMMARY_ROWS = {
+    ("results/takes/take_0525/visual_summary.json", "timing.model_load_s"),
+    ("results/takes/take_0525/visual_summary.json", "verdict_counts.match"),
+    ("results/takes/take_0525/visual_summary.json", "verdict_counts.mismatch"),
+    ("results/takes/take_0525/visual_summary.json", "verdict_counts.total"),
+    ("results/takes/take_0526/visual_summary.json", "timing.model_load_s"),
+    ("results/takes/take_0526/visual_summary.json", "verdict_counts.match"),
+    ("results/takes/take_0526/visual_summary.json", "verdict_counts.mismatch"),
+    ("results/takes/take_0526/visual_summary.json", "verdict_counts.total"),
+    ("results/takes/take_0527/visual_summary.json", "timing.model_load_s"),
+    ("results/takes/take_0527/visual_summary.json", "verdict_counts.match"),
+    ("results/takes/take_0527/visual_summary.json", "verdict_counts.mismatch"),
+    ("results/takes/take_0527/visual_summary.json", "verdict_counts.total"),
+}
 
 
 def _cells(line: str) -> list[str] | None:
@@ -48,6 +62,7 @@ def test_measured_json_and_yaml_rows_match_files() -> None:
     mismatches = []
     checked = 0
     checked_take_rows = 0
+    checked_sources = set()
     for line in (ROOT / "FACTS.md").read_text(encoding="utf-8").splitlines():
         cells = _cells(line)
         if cells is None or len(cells) != 4 or cells[3] != "MEASURED":
@@ -59,10 +74,12 @@ def test_measured_json_and_yaml_rows_match_files() -> None:
         actual = _walk(_load(ROOT / rel), key)
         expected = json.loads(cells[1])
         checked += 1
+        checked_sources.add((rel, key))
         if rel.startswith("results/takes/"):
             checked_take_rows += 1
         if not _matches(actual, expected):
             mismatches.append(f"{cells[0]}: {rel} {key} is {actual!r}, FACTS.md has {expected!r}")
     assert checked > 0
     assert checked_take_rows >= MIN_MEASURED_TAKE_ROWS
+    assert checked_sources >= REQUIRED_VISUAL_SUMMARY_ROWS
     assert not mismatches, "\n".join(mismatches)

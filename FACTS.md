@@ -202,9 +202,9 @@ Both records fail tracking p95, root height, root tilt, foot slip, time out of b
 
 ## Results on Stephen's three takes
 
-The repository contains 27 sanitized JSON records under `results/takes/`, nine for each take. The copied replay, metrics, simulator, driver, SONIC, take, and fusion records passed the privacy gate. All three `visual.json` candidates were rejected because their `pair_path` values contained a forbidden path segment. The Cosmos match counts, mismatch descriptions, Nebius visual job ids, and visual-job times therefore remain NOT VERIFIED.
+The repository contains 33 sanitized JSON records under `results/takes/`, eleven for each take. The original `visual.json` files remain excluded because they contain private artifact paths. The committed `visual_summary.json` files were produced by an explicit allowlist that drops paths and raw responses. They support the Cosmos verdict counts, mismatch fields, model-load times, and per-window latencies below. They do not contain Nebius job metadata or GPU cost inputs.
 
-The aggregate `take_record.json` files predate the later visual and fusion stages. They still say that the visual job was blocked and fusion did not run. The separate `fusion.json` files are the later guarded fusion records. Both states are measured below without pretending that one file updated the other.
+The aggregate `take_record.json` files predate the later visual and fusion stages. They still say that the visual job was blocked and fusion did not run. Each `final_state.json` points to the later visual and fusion records without rewriting that historical file.
 
 | Claim | Value | Source | Tag |
 | --- | --- | --- | --- |
@@ -315,15 +315,31 @@ The aggregate `take_record.json` files predate the later visual and fusion stage
 | take_0525 fusion cost USD | 0.00030144 | results/takes/take_0525/fusion.json cost_usd | MEASURED |
 | take_0526 fusion cost USD | 0.00028386 | results/takes/take_0526/fusion.json cost_usd | MEASURED |
 | take_0527 fusion cost USD | 0.0002802 | results/takes/take_0527/fusion.json cost_usd | MEASURED |
-| take_0525 Cosmos windows that match | 6 of 7 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| take_0526 Cosmos windows that match | 7 of 7 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| take_0527 Cosmos windows that match | 5 of 6 | README.md:172. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| take_0525 Cosmos mismatch | 4 to 5 s: upper body, lower body, orientation | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| take_0526 Cosmos mismatch | none | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| take_0527 Cosmos mismatch | 3 to 4 s: upper body, lower body, orientation | README.md:173. The corresponding visual record was rejected by the privacy gate. | NOT VERIFIED |
-| Nebius visual job ids in the README | aijob-e00d1f0neh67r4nnrt, aijob-e00dpjhqxkn5xgvb76, and aijob-e00xc8v043dvrrdgn5 | README.md:174. No accepted copied record contains these ids. | NOT VERIFIED |
-| Cosmos load, window, and job wall times in the README | load 282 to 283 s, windows 1.2 to 3.5 s, walls 315 s, 313 s, and 312 s, 940 s in all | README.md:168. The visual records were rejected, and no Nebius job record is committed. | NOT VERIFIED |
-| L40S price estimate in the README | about 0.38 USD from 1.35 USD per GPU hour plus 0.012 USD per vCPU hour and 8 vCPUs | README.md:168. The README says this is a price-list estimate, not a billing reading. No price URL or invoice is in the repo. Check the Nebius price page and the billing record for the three job ids. | NOT VERIFIED |
+| take_0525 Cosmos matching windows | 6 | results/takes/take_0525/visual_summary.json verdict_counts.match | MEASURED |
+| take_0526 Cosmos matching windows | 7 | results/takes/take_0526/visual_summary.json verdict_counts.match | MEASURED |
+| take_0527 Cosmos matching windows | 5 | results/takes/take_0527/visual_summary.json verdict_counts.match | MEASURED |
+| take_0525 Cosmos total windows | 7 | results/takes/take_0525/visual_summary.json verdict_counts.total | MEASURED |
+| take_0526 Cosmos total windows | 7 | results/takes/take_0526/visual_summary.json verdict_counts.total | MEASURED |
+| take_0527 Cosmos total windows | 6 | results/takes/take_0527/visual_summary.json verdict_counts.total | MEASURED |
+| take_0525 Cosmos mismatch windows | 1 | results/takes/take_0525/visual_summary.json verdict_counts.mismatch | MEASURED |
+| take_0526 Cosmos mismatch windows | 0 | results/takes/take_0526/visual_summary.json verdict_counts.mismatch | MEASURED |
+| take_0527 Cosmos mismatch windows | 1 | results/takes/take_0527/visual_summary.json verdict_counts.mismatch | MEASURED |
+| take_0525 Cosmos mismatch start seconds | 4.0 | results/takes/take_0525/visual_summary.json windows.4.start_s | MEASURED |
+| take_0525 Cosmos mismatch end seconds | 5.0 | results/takes/take_0525/visual_summary.json windows.4.end_s | MEASURED |
+| take_0525 Cosmos mismatch reason codes | ["upper_body_pose", "lower_body_pose", "orientation"] | results/takes/take_0525/visual_summary.json windows.4.reason_codes | MEASURED |
+| take_0527 Cosmos mismatch start seconds | 3.0 | results/takes/take_0527/visual_summary.json windows.3.start_s | MEASURED |
+| take_0527 Cosmos mismatch end seconds | 4.0 | results/takes/take_0527/visual_summary.json windows.3.end_s | MEASURED |
+| take_0527 Cosmos mismatch reason codes | ["upper_body_pose", "lower_body_pose", "orientation"] | results/takes/take_0527/visual_summary.json windows.3.reason_codes | MEASURED |
+| take_0525 Cosmos model load seconds | 283.131624951 | results/takes/take_0525/visual_summary.json timing.model_load_s | MEASURED |
+| take_0526 Cosmos model load seconds | 282.210436766 | results/takes/take_0526/visual_summary.json timing.model_load_s | MEASURED |
+| take_0527 Cosmos model load seconds | 281.959456796 | results/takes/take_0527/visual_summary.json timing.model_load_s | MEASURED |
+| Nebius visual job ids in the README | aijob-e00d1f0neh67r4nnrt, aijob-e00dpjhqxkn5xgvb76, and aijob-e00xc8v043dvrrdgn5 | The local visual records contain no job id. Recover the original Nebius job metadata to verify these values. | NOT VERIFIED |
+| Nebius visual job states | not recorded | The local visual records contain no job state. Recover the original Nebius job metadata. | NOT VERIFIED |
+| Nebius visual GPU type | L40S | The local visual records contain no GPU type. Recover the original Nebius job metadata. | NOT VERIFIED |
+| Nebius visual GPU seconds | not recorded | The local visual records contain no GPU seconds. Recover the original Nebius job metadata. | NOT VERIFIED |
+| Cosmos job wall times in the README | 315 s, 313 s, and 312 s, 940 s in all | The local visual records contain no job wall time. Recover the original Nebius job metadata. | NOT VERIFIED |
+| Nebius visual GPU cost USD | about 0.38 | No accepted record contains GPU seconds, a price source, or a billing value. | NOT VERIFIED |
+| L40S price estimate in the README | about 0.38 USD from 1.35 USD per GPU hour plus 0.012 USD per vCPU hour and 8 vCPUs | The local visual records contain no price source or cost calculation. Check the Nebius price source and billing record for the three job ids. | NOT VERIFIED |
 | Earlier take_0525 fusion request in the README | request 503cf0e1add30b7ca120deaabebf59ca passed on the first answer with re-show 1 to 2 s | README.md:184. Check the saved raw response for that request id. | NOT VERIFIED |
 | Phone recording claim | IMG_0525 to IMG_0527 at 30 fps on 2026-10-05 | README.md:138. Check the gitignored source videos and their container metadata. | NOT VERIFIED |
 
@@ -397,10 +413,10 @@ The hosted GitHub Actions run for this SHA was not queried.
 - Do not claim a real Unitree robot ran. The path in this repo is a MuJoCo simulation.
 - Do not claim that the measured replay and fusion results on Stephen's takes establish product accuracy or value. No outside human comparison exists.
 - Do not claim Cosmos or Nemotron graded the two Pexels clips. Both records are blocked before job creation. GPU time and GPU cost on those records are zero.
-- Do not claim the README's Cosmos match counts, mismatch descriptions, Nebius visual job ids, or visual-job times for Stephen's takes. The visual records were rejected by the privacy gate. The later fusion decisions, request ids, and fusion costs are MEASURED from the accepted fusion records.
+- Do not claim Nebius visual job ids, job states, GPU type, GPU seconds, job wall times, price source, or GPU cost for Stephen's takes. The visual verdict counts, mismatch fields, model-load times, and later fusion records are MEASURED from the accepted summaries and records.
 - Do not claim the about 0.38 USD figure is a bill. The README calls it a price-list estimate, and the price list is not in the repo.
 - Do not claim Nemotron at temperature 0 is deterministic. The README says an earlier answer differed, and that run is NOT VERIFIED here. The code still sends temperature 0.
-- Do not claim the accepted records contain the Nebius visual job ids. The copied aggregate take records still list the visual judge as blocked, and the visual records were rejected.
+- Do not claim the accepted records contain the Nebius visual job ids. The visual summaries contain no job metadata, and the historical take records still list the visual judge as blocked.
 - Do not claim the exact GEM-X or GEAR-SONIC checkout, weights, or planner that produced the plumbing runs. The README says those runtime commits were not captured. The take records hash saved outputs. They do not name those external commits.
 - Do not claim the model card's license, hardware list, or 24 GB BF16 figure. Those pages were not opened.
 - Do not claim the job preset is a 48 GB GPU. `submit.sh` asks for platform `gpu-l40s-a` and preset `1gpu-8vcpu-32gb`.
@@ -422,7 +438,7 @@ The committed file wins. The README cell is the rounded or paraphrased form.
 8. `README.md:130` gives `86.663354` seconds for the `sam_3d_body` failure. That duration is not in the take record. Only the exception string is.
 9. `README.md:28` says a 48 GB L40S. `tools/cosmos_job/submit.sh:46` sets preset `1gpu-8vcpu-32gb`. The 48 GB figure is not in the job file.
 10. `README.md:12` names `NewtonPipeline(skeleton, "soma", "unitree_g1")`. No file in this repo contains that call. `tools/wsl/finish_gemx_retarget.py:27` calls `run_retarget`.
-11. Stephen's replay metrics, deterministic grades, later fusion decisions, Token Factory request ids, and fusion costs now match committed records under `results/takes/`. The Cosmos match counts, visual mismatch descriptions, Nebius visual job ids, and visual-job times remain NOT VERIFIED because every `visual.json` candidate was rejected by the privacy gate.
+11. Stephen's replay metrics, deterministic grades, visual verdict counts, mismatch fields, model-load times, later fusion decisions, Token Factory request ids, and fusion costs now match committed records under `results/takes/`. Nebius visual job metadata, GPU seconds, price source, and GPU cost remain NOT VERIFIED because those fields are absent from the local visual records.
 12. The amendment date `2026-10-06` and commit `9fb9c782af1010a6c414c534386d19fa7e4d226d` at `2026-10-05 23:55:50 -0400` are the same instant in UTC (`2026-10-06 03:55:50`). The local calendar date and the yaml date are not the same label.
 
 README cells that round to six decimal places and match the stored value at those places are not listed. That includes short-clip jitter `0.005299`, long-clip jitter `0.001185`, the failed-retarget `290.748189`, and the long-clip GEM-X total `722.984161`. Short-clip post-roll `0.605870` is the same number as stored `0.60587`.

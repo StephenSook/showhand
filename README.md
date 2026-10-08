@@ -137,7 +137,7 @@ The visual verdicts, fusion outputs, and GPU costs are not reported here because
 
 Stephen recorded three takes (`IMG_0525` to `IMG_0527`) on a phone at 30 fps on 2026-10-05. Each ran through `tools/wsl/run_take.sh`: GEM-X, SOMA to G1 retargeting, the 50 Hz SONIC replay in MuJoCo, the offline render, a side-by-side clip of source and simulation, and the deterministic grade against the frozen thresholds. The source videos and full run folders stay under the ignored `artifacts/` folder and are not committed.
 
-The sanitized text records are documented in [`results/takes/`](results/takes/README.md). The replay and deterministic numbers below come from the committed `replay_timing.json` and `metrics.json` files there. The fusion status, decision, request ids, and cost come from the committed `fusion.json` files. The three `visual.json` candidates failed the privacy gate, so the Cosmos match counts, mismatch descriptions, Nebius job ids, and visual-job times below remain unverified repository claims.
+The sanitized text records are documented in [`results/takes/`](results/takes/README.md). The replay and deterministic numbers below come from the committed `replay_timing.json` and `metrics.json` files. The visual values come from the allowlisted [`take_0525`](results/takes/take_0525/visual_summary.json), [`take_0526`](results/takes/take_0526/visual_summary.json), and [`take_0527`](results/takes/take_0527/visual_summary.json) summaries. The [`take_0525`](results/takes/take_0525/final_state.json), [`take_0526`](results/takes/take_0526/final_state.json), and [`take_0527`](results/takes/take_0527/final_state.json) final-state records point from the stale historical records to the later stage outputs. Fusion status, decision, request ids, and cost come from `fusion.json`.
 
 | Field | `take_0525` | `take_0526` | `take_0527` |
 | --- | ---: | ---: | ---: |
@@ -165,19 +165,19 @@ These are Showhand's measurements of a simulated replay. They do not say whether
 
 ### Visual judge and fusion on Stephen's takes
 
-`nvidia/Cosmos-Reason1-7B` at revision `375e24000b24baed78f4618d3dd779e47cd96323` ran in bfloat16 on one Nebius L40S, one Serverless Job per take, reading the frame pairs from a private bucket mounted read-only. Each job loaded the model in 282 to 283 s and answered each one-second window in 1.2 to 3.5 s. Job wall times were 315 s, 313 s and 312 s, 940 s in all. At the published L40S VM price ($1.35 per GPU hour plus $0.012 per vCPU hour, 8 vCPUs) that is about $0.38. That figure is an estimate from the price list, not a billing reading.
+The accepted summaries record `nvidia/Cosmos-Reason1-7B`, exact model-load times, and each window's verdict and latency. They do not record a Nebius job id, job state, GPU type, GPU seconds, job wall time, price source, or GPU cost. The existing L40S, job-id, wall-time, and about $0.38 claims remain unverified until the original Nebius job metadata is recovered.
 
 | Field | `take_0525` | `take_0526` | `take_0527` |
 | --- | --- | --- | --- |
 | Cosmos windows that match | 6 of 7 | 7 of 7 | 5 of 6 |
 | Cosmos mismatch | 4 to 5 s: upper body, lower body, orientation | none | 3 to 4 s: upper body, lower body, orientation |
-| Nebius job | `aijob-e00d1f0neh67r4nnrt` | `aijob-e00dpjhqxkn5xgvb76` | `aijob-e00xc8v043dvrrdgn5` |
+| Nebius job, not in accepted records | `aijob-e00d1f0neh67r4nnrt` | `aijob-e00dpjhqxkn5xgvb76` | `aijob-e00xc8v043dvrrdgn5` |
 | Fusion status | deterministic fallback after 2 guard refusals | passed after one retry | passed after one retry |
 | Fused decision | re-show 1 to 2 s and 4 to 5 s | re-show 0 to 1 s | re-show 3 to 4 s |
 | Token Factory request ids | `5f8b02c559b5532e97fc393dd83d92cd`, `55e67f4ad5ca373c73f65c11b0934400` | `ef1546107a4724d7d1585335e2afb568`, `639193fa38ca5f6abc8e276b697ab41d` | `17e8b467742ee10f7a3e250ebf86cd73`, `a455ed7681a48218f6ab822aa9aa8e9e` |
 | Fusion cost | $0.00030144 | $0.00028386 | $0.00028020 |
 
-The committed fusion records support the final four rows. The accepted records do not support the two Cosmos rows or the Nebius job row.
+The visual summaries support the first two rows. The fusion records support the final four rows. No accepted record supports the Nebius job row or the missing job-level resource and cost fields.
 
 Both visual mismatches show the same thing in their frames: Stephen squats facing the camera while the G1 squats turned about 90 degrees. The deterministic grade has no yaw term, so this is a failure the visual judge sees and the metrics cannot.
 
@@ -195,5 +195,5 @@ The only current residual inputs are synthetic unit-test rows. Their numbers are
 - The pre-registered residual comparison therefore has no result.
 - The stock Pexels clips cannot establish product accuracy or value.
 - The two Pexels plumbing clips have no visual verdicts; the jobs above covered Stephen's takes only.
-- The take records for Stephen's takes still list the visual judge as blocked; they have not been regenerated with the job ids above.
+- The historical take records for Stephen's takes still list the visual judge as blocked. The committed `final_state.json` files point to the later visual and fusion outcomes without asserting unsupported job ids.
 - Exact runtime provenance for the external GEM-X and GEAR-SONIC installations was not captured for these plumbing runs.
