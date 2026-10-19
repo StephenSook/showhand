@@ -2,6 +2,8 @@
 
 Showhand grades recorded takes of one in-place human move. It does not turn a video into a robot move. It runs a take through NVIDIA's stock pose, retargeting, and humanoid-control path, measures the replay, and identifies seconds that should be shown again.
 
+**Watch the three graded takes: <https://showhand-replay.vercel.app>.** Each phone recording plays beside the simulated G1 that replayed it, with every measured second, both vision verdicts, every Nemotron answer the guard refused or passed, and the seconds sent back. No physical robot was used. The page is built from this repository's committed take records ([`web/`](web/README.md)).
+
 Phase 1 used two licensed Pexels clips only to test the plumbing. Those results are labeled `PLUMBING TEST`. Stephen then recorded three takes of his own on a phone, and they ran through the same pipeline. Neither set is evidence that Showhand agrees with a human grader or improves robot teaching, because no outside grader has labeled a take yet.
 
 ## Ownership and credit
