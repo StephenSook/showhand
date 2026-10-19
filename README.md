@@ -9,7 +9,7 @@ Phase 1 used two licensed Pexels clips only to test the plumbing. Those results 
 The stock NVIDIA path is:
 
 1. NVIDIA GEM-X extracts a saved SOMA body sequence from the clip.
-2. NVIDIA SOMA Retargeter runs `NewtonPipeline(skeleton, "soma", "unitree_g1")` and exports the parallel G1 joint-angle reference used for tracking metrics.
+2. NVIDIA's SOMA retargeter (its Newton pipeline from SOMA to the Unitree G1, inside NVIDIA's code) turns the saved body sequence into the parallel G1 joint-angle reference used for tracking metrics. This repo calls it through the saved-result helper `run_retarget` in `tools/wsl/finish_gemx_retarget.py`.
 3. The saved SOMA sequence is converted to SMPL Protocol v3 and replayed at 50 Hz into NVIDIA GEAR-SONIC.
 4. GEAR-SONIC controls the simulated Unitree G1 in its MuJoCo environment.
 
@@ -25,7 +25,7 @@ These are engineering cutoffs, not measured findings. They must not be tuned aga
 
 ## Model choice
 
-The visual job is pinned to `nvidia/Cosmos-Reason1-7B`. Its Hugging Face model card lists the NVIDIA Open Model License, says the model accepts images and video, and says NVIDIA tested BF16 inference. The card reports H100, A100, and GB200 test hardware. NVIDIA's NIM support information gives a 24 GB BF16 memory requirement for the 7B model, so its weights and stated BF16 requirement fit a 48 GB L40S. Loadability on this exact L40S still has to be established by the job. The code fails closed if the model does not load or if any window does not return the required object.
+The visual job is pinned to `nvidia/Cosmos-Reason1-7B`. Its Hugging Face model card lists the NVIDIA Open Model License, says the model accepts images and video, and says NVIDIA tested BF16 inference. The card reports H100, A100, and GB200 test hardware. NVIDIA's NIM support information gives a 24 GB BF16 memory requirement for the 7B model; one L40S GPU has 48 GB of GPU memory. The job runs on Nebius platform `gpu-l40s-a` with preset `1gpu-8vcpu-32gb` (one L40S, 8 vCPUs, 32 GB of host RAM; `tools/cosmos_job/submit.sh`), and it loaded the model in 282 to 283 s on each of Stephen's three takes (`results/takes/take_*/visual_summary.json`, `timing.model_load_s`). The code fails closed if the model does not load or if any window does not return the required object.
 
 Sources:
 

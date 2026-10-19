@@ -436,8 +436,8 @@ The committed file wins. The README cell is the rounded or paraphrased form.
 6. `README.md:109` prints `17.600002` s for the long clip replay. `timings_s.sonic_replay_50_hz` is `17.600001754`.
 7. `README.md:95` says one take's pairs are about 300 KB. The short clip `errors.2` says the injected archive was `290162` bytes and exceeded `65536`.
 8. `README.md:130` gives `86.663354` seconds for the `sam_3d_body` failure. That duration is not in the take record. Only the exception string is.
-9. `README.md:28` says a 48 GB L40S. `tools/cosmos_job/submit.sh:46` sets preset `1gpu-8vcpu-32gb`. The 48 GB figure is not in the job file.
-10. `README.md:12` names `NewtonPipeline(skeleton, "soma", "unitree_g1")`. No file in this repo contains that call. `tools/wsl/finish_gemx_retarget.py:27` calls `run_retarget`.
+9. FIXED 2026-10-19: `README.md:28` said a 48 GB L40S as if it were the job size. It now says 48 GB is the L40S GPU memory, names the preset `1gpu-8vcpu-32gb` from `tools/cosmos_job/submit.sh`, and cites the measured model-load times.
+10. FIXED 2026-10-19: `README.md:12` named `NewtonPipeline(skeleton, "soma", "unitree_g1")` as if this repo called it. It now says the Newton pipeline is inside NVIDIA's code and that this repo calls `run_retarget` in `tools/wsl/finish_gemx_retarget.py`.
 11. Stephen's replay metrics, deterministic grades, visual verdict counts, mismatch fields, model-load times, later fusion decisions, Token Factory request ids, and fusion costs now match committed records under `results/takes/`. Nebius visual job metadata, GPU seconds, price source, and GPU cost remain NOT VERIFIED because those fields are absent from the local visual records.
 12. The amendment date `2026-10-06` and commit `9fb9c782af1010a6c414c534386d19fa7e4d226d` at `2026-10-05 23:55:50 -0400` are the same instant in UTC (`2026-10-06 03:55:50`). The local calendar date and the yaml date are not the same label.
 
