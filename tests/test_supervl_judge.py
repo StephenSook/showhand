@@ -6,6 +6,8 @@ import pytest
 from tools import supervl_judge
 from tools.cosmos_job import visual_judge
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def test_last_json_parser_uses_final_object_after_reasoning_leak() -> None:
     raw = (
@@ -78,3 +80,30 @@ def test_invalid_model_output_fails_closed_without_raw_content(
     assert "match" not in result
     assert "raw" not in json.dumps(result)
     assert cost > 0
+
+
+@pytest.mark.parametrize(("take_id", "window_count"), [("0525", 7), ("0526", 7), ("0527", 6)])
+def test_committed_supervl_summaries_have_complete_window_accounting(
+    take_id: str, window_count: int
+) -> None:
+    path = ROOT / "results" / "takes" / f"take_{take_id}" / "supervl_summary.json"
+    summary = json.loads(path.read_text(encoding="utf-8"))
+
+    assert summary["model_id"] == supervl_judge.MODEL_ID
+    assert summary["verdict_counts"]["total"] == window_count
+    assert summary["verdict_counts"]["invalid"] == 0
+    assert summary["cost_complete"] is True
+    assert len(summary["windows"]) == window_count
+    for index, window in enumerate(summary["windows"]):
+        assert window["window_index"] == index
+        assert window["model_id"] == supervl_judge.MODEL_ID
+        assert window["status"] == "valid"
+        assert isinstance(window["request_id"], str) and window["request_id"]
+        assert window["latency_s"] > 0
+        assert window["tokens"]["prompt_tokens"] > 0
+        assert window["tokens"]["completion_tokens"] > 0
+        assert window["cost_usd"] > 0
+        visual_judge.validate_verdict(
+            {key: window[key] for key in ("match", "reason_codes", "summary")},
+            source="Super VL",
+        )

@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "take_id": "take_0525",
+  "manifest_sha256": "a15360d29bf311b98505f82c6c04e1e0aaf6bc5182b39f2f7ef88edc7e906160",
+  "model_id": "nvidia/Nemotron-3.5-Super-VL",
+  "request": {
+    "endpoint": "https://api.tokenfactory.nebius.com/v1/chat/completions",
+    "temperature": 0,
+    "max_tokens": 1200,
+    "enable_thinking": false,
+    "fixed_question_sha256": "b950af981fbdf271b0951a413207070e991e2d277d58a84ed5875c94cf32b172"
+  },
+  "pricing_usd_per_million_tokens": {
+    "input": 0.3,
+    "output": 0.9
+  },
+  "verdict_counts": {
+    "match": 0,
+    "mismatch": 7,
+    "invalid": 0,
+    "total": 7
+  },
+  "timing": {
+    "wall_s": 14.489037,
+    "request_latency_s": 14.488435
+  },
+  "tokens": {
+    "prompt_tokens": 3927,
+    "completion_tokens": 502,
+    "total_tokens": 4429
+  },
+  "cost_usd": 0.0016299,
+  "cost_complete": true,
+  "windows": [
+    {
+      "window_index": 0,
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot is leaning forward with arms extended and one leg lifted, while the human stands upright with both feet on the ground and arms at their sides.",
+      "request_id": "b0ba6f86984f1b9d0a578e813687e374",
+      "http_status": 200,
+      "latency_s": 3.039287,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 69,
+        "total_tokens": 630
+      },
+      "cost_usd": 0.0002304
+    },
+    {
+      "window_index": 1,
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's arms are extended outward and one leg is lifted, while the human has both arms raised vertically and both feet on the ground.",
+      "request_id": "19b844b85cce213d76ef3a7a20d91c5b",
+      "http_status": 200,
+      "latency_s": 2.510364,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 67,
+        "total_tokens": 628
+      },
+      "cost_usd": 0.0002286
+    },
+    {
+      "window_index": 2,
+      "start_s": 2.0,
+      "end_s": 3.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's arms are extended forward while the human's are down, and the robot's legs are straight while the human's are slightly bent.",
+      "request_id": "cdff6d84869dedb1db3dd0a0ef0510b6",
+      "http_status": 200,
+      "latency_s": 2.527028,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 68,
+        "total_tokens": 629
+      },
+      "cost_usd": 0.0002295
+    },
+    {
+      "window_index": 3,
+      "start_s": 3.0,
+      "end_s": 4.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's arms are extended forward and downward while the human's arms are down at the sides, and the robot's feet are closer together than the human's stance.",
+      "request_id": "e8d7e744d7482176f53de8fcfdf9c651",
+      "http_status": 200,
+      "latency_s": 2.578034,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 73,
+        "total_tokens": 634
+      },
+      "cost_usd": 0.000234
+    },
+    {
+      "window_index": 4,
+      "start_s": 4.0,
+      "end_s": 5.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The human is in a low squat with hands on the floor, while the robot is in a crouched but more upright stance with arms extended forward, resulting in different body configurations and orientations.",
+      "request_id": "2e64dd4173624cf8122e1bd2191a773e",
+      "http_status": 200,
+      "latency_s": 1.313751,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 79,
+        "total_tokens": 640
+      },
+      "cost_usd": 0.0002394
+    },
+    {
+      "window_index": 5,
+      "start_s": 5.0,
+      "end_s": 6.0,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The human is standing upright with arms extended sideways, while the robot is in a crouched, forward-leaning pose with arms reaching forward, indicating a significant mismatch in body configuration and orientation.",
+      "request_id": "33fa9498fa2da651165c9f560592a8fe",
+      "http_status": 200,
+      "latency_s": 1.272507,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 78,
+        "total_tokens": 639
+      },
+      "cost_usd": 0.0002385
+    },
+    {
+      "window_index": 6,
+      "start_s": 6.0,
+      "end_s": 6.1,
+      "model_id": "nvidia/Nemotron-3.5-Super-VL",
+      "status": "valid",
+      "match": false,
+      "reason_codes": [
+        "upper_body_pose",
+        "lower_body_pose",
+        "orientation"
+      ],
+      "summary": "The robot's arms are extended forward and its body is angled, while the human's arms are extended to the sides and the body faces forward.",
+      "request_id": "e1c19d3c670938b8ef855e1e5d978146",
+      "http_status": 200,
+      "latency_s": 1.247464,
+      "tokens": {
+        "prompt_tokens": 561,
+        "completion_tokens": 68,
+        "total_tokens": 629
+      },
+      "cost_usd": 0.0002295
+    }
+  ]
+}
