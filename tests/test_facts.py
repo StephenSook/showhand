@@ -9,7 +9,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_RE = re.compile(r"^(\S+\.(?:json|yaml|yml)) ([A-Za-z0-9_.]+)$")
-MIN_MEASURED_TAKE_ROWS = 128
+MIN_MEASURED_TAKE_ROWS = 146
 REQUIRED_VISUAL_SUMMARY_ROWS = {
     ("results/takes/take_0525/visual_summary.json", "timing.model_load_s"),
     ("results/takes/take_0525/visual_summary.json", "verdict_counts.match"),
@@ -23,6 +23,35 @@ REQUIRED_VISUAL_SUMMARY_ROWS = {
     ("results/takes/take_0527/visual_summary.json", "verdict_counts.match"),
     ("results/takes/take_0527/visual_summary.json", "verdict_counts.mismatch"),
     ("results/takes/take_0527/visual_summary.json", "verdict_counts.total"),
+}
+REQUIRED_SUPERVL_SUMMARY_ROWS = {
+    (f"results/takes/take_{take}/supervl_summary.json", key)
+    for take in ("0525", "0526", "0527")
+    for key in (
+        "cost_usd",
+        "model_id",
+        "verdict_counts.invalid",
+        "verdict_counts.match",
+        "verdict_counts.mismatch",
+        "verdict_counts.total",
+    )
+}
+REQUIRED_AGREEMENT_ROWS = {
+    ("results/judge_agreement.json", key)
+    for key in (
+        "overall.windows_total",
+        "overall.supervl_valid",
+        "overall.supervl_invalid",
+        "overall.cosmos_vs_supervl.agreements",
+        "overall.cosmos_vs_supervl.compared",
+        "overall.cosmos_vs_supervl.agreement_rate",
+        "overall.cosmos_vs_deterministic.agreements",
+        "overall.cosmos_vs_deterministic.compared",
+        "overall.cosmos_vs_deterministic.agreement_rate",
+        "overall.supervl_vs_deterministic.agreements",
+        "overall.supervl_vs_deterministic.compared",
+        "overall.supervl_vs_deterministic.agreement_rate",
+    )
 }
 
 
@@ -82,4 +111,6 @@ def test_measured_json_and_yaml_rows_match_files() -> None:
     assert checked > 0
     assert checked_take_rows >= MIN_MEASURED_TAKE_ROWS
     assert checked_sources >= REQUIRED_VISUAL_SUMMARY_ROWS
+    assert checked_sources >= REQUIRED_SUPERVL_SUMMARY_ROWS
+    assert checked_sources >= REQUIRED_AGREEMENT_ROWS
     assert not mismatches, "\n".join(mismatches)

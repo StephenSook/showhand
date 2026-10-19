@@ -7,9 +7,10 @@ checked before it was copied. Each committed file is smaller than 64 KB.
 
 The historical `take_record.json` files were written before the visual and fusion stages, so they
 still report a blocked visual job and an unrun fusion stage. Each `final_state.json` preserves that
-history while pointing to the later replay, metrics, visual-summary, and fusion values that describe
-the take after all completed stages. Read `final_state.json` first instead of treating the historical
-record as the current state.
+history while pointing to the later replay, metrics, primary visual-summary, and fusion values that
+describe the take after those stages completed. The independent Super VL summaries were added later
+and are not folded into `final_state.json`. Read that file first for the primary pipeline state, then
+read `supervl_summary.json` for the second visual judge.
 
 ## File map
 
@@ -18,6 +19,7 @@ record as the current state.
 | `take_record.json` | Aggregate replay provenance, deterministic metrics, artifact hashes, and the pre-visual stage status. |
 | `metrics.json` | Whole-take and one-second deterministic measurements against the frozen thresholds. |
 | `visual_summary.json` | Allowlisted model, timing, verdict-count, and per-window visual fields with every path and raw response dropped. |
+| `supervl_summary.json` | Allowlisted Super VL verdicts, request ids, timing, token usage, and cost with image data, paths, and raw responses dropped. |
 | `fusion.json` | Nemotron attempts, grounding-guard results, final decision, token usage, request ids, latency, and cost. |
 | `final_state.json` | Later stage outcomes and the safe source file and key for each included value. |
 | `replay_timing.json` | Replay run id, source and output counts, commit state, timing, jitter, and simulator receipt data. |
@@ -29,8 +31,9 @@ record as the current state.
 
 ## Run provenance
 
-The replay run ids come from each copied `replay_timing.json`. The Token Factory request ids come
-from each copied `fusion.json`.
+The replay run ids come from each copied `replay_timing.json`. The Token Factory fusion request ids
+come from each copied `fusion.json`. The 20 Super VL request ids are stored beside their windows in
+the three `supervl_summary.json` files.
 
 | Take | Replay run id | Showhand commit at replay | Token Factory request ids |
 | --- | --- | --- | --- |
@@ -55,6 +58,10 @@ The original files were not copied. `tools/summarize_visual.py` retained only it
 allowlist, dropped every path and raw response field, checked every kept string again, and wrote the
 three `visual_summary.json` files.
 
+`tools/supervl_judge.py` built the second summaries directly from an explicit output schema. It kept
+no request image, encoded image data, local path, or raw response. The privacy test checks every
+committed results file for those forbidden values.
+
 ## Local path replacements
 
 The following keys contained absolute Windows or WSL paths. Their complete values were replaced
@@ -65,5 +72,6 @@ with the literal placeholder `"<local path>"` in each of the three take director
 - `driver/summary.json`: `render`, `take_record`
 - `sim/render_meta.json`: `source_telemetry`, `source_replay_timing`
 
-This made 18 replacements in total. Relative artifact references that passed the forbidden-segment
-check remain in the copied records.
+This made 18 absolute-path replacements in total. The 13 relative artifact references in each
+`take_record.json` were also replaced, for 39 more replacements. The committed results contain no
+reference into the ignored local artifact directory.

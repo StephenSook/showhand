@@ -202,7 +202,7 @@ Both records fail tracking p95, root height, root tilt, foot slip, time out of b
 
 ## Results on Stephen's three takes
 
-The repository contains 33 sanitized JSON records under `results/takes/`, eleven for each take. The original `visual.json` files remain excluded because they contain private artifact paths. The committed `visual_summary.json` files were produced by an explicit allowlist that drops paths and raw responses. They support the Cosmos verdict counts, mismatch fields, model-load times, and per-window latencies below. They do not contain Nebius job metadata or GPU cost inputs.
+The repository contains 36 sanitized JSON records under `results/takes/`, twelve for each take. The original `visual.json` files remain excluded because they contain private artifact paths. The committed `visual_summary.json` and `supervl_summary.json` files were produced by explicit allowlists that drop paths, image data, and raw responses. They support the visual verdict counts, timing, token usage, request ids, and Token Factory cost below. The Cosmos summaries do not contain Nebius job metadata or GPU cost inputs.
 
 The aggregate `take_record.json` files predate the later visual and fusion stages. They still say that the visual job was blocked and fusion did not run. Each `final_state.json` points to the later visual and fusion records without rewriting that historical file.
 
@@ -333,6 +333,36 @@ The aggregate `take_record.json` files predate the later visual and fusion stage
 | take_0525 Cosmos model load seconds | 283.131624951 | results/takes/take_0525/visual_summary.json timing.model_load_s | MEASURED |
 | take_0526 Cosmos model load seconds | 282.210436766 | results/takes/take_0526/visual_summary.json timing.model_load_s | MEASURED |
 | take_0527 Cosmos model load seconds | 281.959456796 | results/takes/take_0527/visual_summary.json timing.model_load_s | MEASURED |
+| take_0525 Super VL model id | "nvidia/Nemotron-3.5-Super-VL" | results/takes/take_0525/supervl_summary.json model_id | MEASURED |
+| take_0526 Super VL model id | "nvidia/Nemotron-3.5-Super-VL" | results/takes/take_0526/supervl_summary.json model_id | MEASURED |
+| take_0527 Super VL model id | "nvidia/Nemotron-3.5-Super-VL" | results/takes/take_0527/supervl_summary.json model_id | MEASURED |
+| take_0525 Super VL matching windows | 0 | results/takes/take_0525/supervl_summary.json verdict_counts.match | MEASURED |
+| take_0526 Super VL matching windows | 1 | results/takes/take_0526/supervl_summary.json verdict_counts.match | MEASURED |
+| take_0527 Super VL matching windows | 0 | results/takes/take_0527/supervl_summary.json verdict_counts.match | MEASURED |
+| take_0525 Super VL mismatch windows | 7 | results/takes/take_0525/supervl_summary.json verdict_counts.mismatch | MEASURED |
+| take_0526 Super VL mismatch windows | 6 | results/takes/take_0526/supervl_summary.json verdict_counts.mismatch | MEASURED |
+| take_0527 Super VL mismatch windows | 6 | results/takes/take_0527/supervl_summary.json verdict_counts.mismatch | MEASURED |
+| take_0525 Super VL invalid windows | 0 | results/takes/take_0525/supervl_summary.json verdict_counts.invalid | MEASURED |
+| take_0526 Super VL invalid windows | 0 | results/takes/take_0526/supervl_summary.json verdict_counts.invalid | MEASURED |
+| take_0527 Super VL invalid windows | 0 | results/takes/take_0527/supervl_summary.json verdict_counts.invalid | MEASURED |
+| take_0525 Super VL total windows | 7 | results/takes/take_0525/supervl_summary.json verdict_counts.total | MEASURED |
+| take_0526 Super VL total windows | 7 | results/takes/take_0526/supervl_summary.json verdict_counts.total | MEASURED |
+| take_0527 Super VL total windows | 6 | results/takes/take_0527/supervl_summary.json verdict_counts.total | MEASURED |
+| take_0525 Super VL cost USD | 0.0016299 | results/takes/take_0525/supervl_summary.json cost_usd | MEASURED |
+| take_0526 Super VL cost USD | 0.0016191 | results/takes/take_0526/supervl_summary.json cost_usd | MEASURED |
+| take_0527 Super VL cost USD | 0.0014535 | results/takes/take_0527/supervl_summary.json cost_usd | MEASURED |
+| Judge agreement total windows | 20 | results/judge_agreement.json overall.windows_total | MEASURED |
+| Judge agreement valid Super VL windows | 20 | results/judge_agreement.json overall.supervl_valid | MEASURED |
+| Judge agreement invalid Super VL windows | 0 | results/judge_agreement.json overall.supervl_invalid | MEASURED |
+| Cosmos and Super VL agreements | 3 | results/judge_agreement.json overall.cosmos_vs_supervl.agreements | MEASURED |
+| Cosmos and Super VL compared windows | 20 | results/judge_agreement.json overall.cosmos_vs_supervl.compared | MEASURED |
+| Cosmos and Super VL agreement rate | 0.15 | results/judge_agreement.json overall.cosmos_vs_supervl.agreement_rate | MEASURED |
+| Cosmos and deterministic agreements | 15 | results/judge_agreement.json overall.cosmos_vs_deterministic.agreements | MEASURED |
+| Cosmos and deterministic compared windows | 20 | results/judge_agreement.json overall.cosmos_vs_deterministic.compared | MEASURED |
+| Cosmos and deterministic agreement rate | 0.75 | results/judge_agreement.json overall.cosmos_vs_deterministic.agreement_rate | MEASURED |
+| Super VL and deterministic agreements | 2 | results/judge_agreement.json overall.supervl_vs_deterministic.agreements | MEASURED |
+| Super VL and deterministic compared windows | 20 | results/judge_agreement.json overall.supervl_vs_deterministic.compared | MEASURED |
+| Super VL and deterministic agreement rate | 0.1 | results/judge_agreement.json overall.supervl_vs_deterministic.agreement_rate | MEASURED |
 | Nebius visual job ids in the README | aijob-e00d1f0neh67r4nnrt, aijob-e00dpjhqxkn5xgvb76, and aijob-e00xc8v043dvrrdgn5 | The local visual records contain no job id. Recover the original Nebius job metadata to verify these values. | NOT VERIFIED |
 | Nebius visual job states | not recorded | The local visual records contain no job state. Recover the original Nebius job metadata. | NOT VERIFIED |
 | Nebius visual GPU type | L40S | The local visual records contain no GPU type. Recover the original Nebius job metadata. | NOT VERIFIED |

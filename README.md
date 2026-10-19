@@ -183,6 +183,23 @@ Both visual mismatches show the same thing in their frames: Stephen squats facin
 
 The grounding guard refused the first Nemotron answer on every take. On `take_0526` and `take_0527` it answered accept while measured evidence failed. On `take_0525` it twice proposed re-showing 2 to 3 s, a second with no negative evidence. Told the refusal reason, Nemotron gave grounded windows for `take_0526` and `take_0527`; `take_0525` fell back to re-showing every negative window. Nemotron was not deterministic at temperature 0: an earlier run on `take_0525` (request `503cf0e1add30b7ca120deaabebf59ca`) passed on its first answer with re-show 1 to 2 s. The fused answers can also leave out a failing second: `take_0526`'s re-shows 0 to 1 s but not the failing 2 to 3 s. The retry and the fallback were added on 2026-10-06, before any outside grade existed, and are recorded as an amendment in `config/residual_prereg.yaml`.
 
+## Second visual judge (Nemotron 3.5 Super VL on Token Factory)
+
+`tools/supervl_judge.py` sends each original Cosmos window input to the open-weight NVIDIA-Nemotron-3.5-Super-VL-120B-A12B model through Nebius Token Factory as `nvidia/Nemotron-3.5-Super-VL`. It imports the same fixed question and schema validator used by the Cosmos job. Each invalid response fails closed for that window. This path calls the hosted API and needs no GPU job.
+
+The recorded run covered 20 windows [MEASURED], all 20 of which returned valid schema objects [MEASURED]. Temperature was 0, but the model is not assumed to be deterministic and no prompt or threshold was tuned against these results.
+
+| Take | Valid windows | Cosmos vs Super VL | Cosmos vs deterministic | Super VL vs deterministic | Super VL cost |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `take_0525` | 7 of 7 [MEASURED] | 1 of 7, 14.2857% [MEASURED] | 5 of 7, 71.4286% [MEASURED] | 1 of 7, 14.2857% [MEASURED] | $0.0016299 [MEASURED] |
+| `take_0526` | 7 of 7 [MEASURED] | 1 of 7, 14.2857% [MEASURED] | 5 of 7, 71.4286% [MEASURED] | 1 of 7, 14.2857% [MEASURED] | $0.0016191 [MEASURED] |
+| `take_0527` | 6 of 6 [MEASURED] | 1 of 6, 16.6667% [MEASURED] | 5 of 6, 83.3333% [MEASURED] | 0 of 6, 0.0000% [MEASURED] | $0.0014535 [MEASURED] |
+| Overall | 20 of 20 [MEASURED] | 3 of 20, 15.0% [MEASURED] | 15 of 20, 75.0% [MEASURED] | 2 of 20, 10.0% [MEASURED] | $0.0047025 [MEASURED] |
+
+The verdict counts and costs come from the three committed `supervl_summary.json` files. The agreement counts come from [`results/judge_agreement.json`](results/judge_agreement.json), which compares both visual verdicts with the committed deterministic per-second grades. These are judge-to-judge comparisons, not agreement with a human grader.
+
+The private frames were sent only to Nebius Token Factory, whose inference service runs in [zero-retention mode](https://nebius.com/services/token-factory/enterprise-grade-inference), and were never committed. The committed summaries contain verdict text, request ids, timing, token counts, and cost, but no image bytes, data URLs, or local image paths.
+
 ## Residual evaluation
 
 `config/residual_prereg.yaml` fixes the comparison before real labels exist. The primary result will be the paired difference between fused-judge and tracking-only Cohen kappa against outside human binary grades, with a whole-take paired percentile bootstrap and 10,000 replicates. The harness also reports agreement rates and confusion matrices.
