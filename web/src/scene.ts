@@ -17,11 +17,12 @@ export interface SceneColors {
 }
 
 const UP_FROM_MUJOCO = new THREE.Euler(-Math.PI / 2, 0, 0);
+const BASE_FOV = 32;
 
 export class RobotScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(32, 1, 0.05, 50);
+  private readonly camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.05, 50);
   private readonly controls: OrbitControls;
   private readonly root = new THREE.Group();
   private readonly ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
@@ -197,6 +198,11 @@ export class RobotScene {
     if (size.x === width && size.y === height) return;
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
+    // A tall, narrow pane (a phone) would crop outstretched arms; open the vertical field of view
+    // part of the way toward keeping the horizontal one, without the distortion of going all the way.
+    const base = Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2));
+    const widen = this.camera.aspect < 1 ? Math.pow(this.camera.aspect, -0.6) : 1;
+    this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(base * widen));
     this.camera.updateProjectionMatrix();
   }
 
