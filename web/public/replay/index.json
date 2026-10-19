@@ -1,0 +1,20 @@
+{
+ "schema_version": 1,
+ "takes": [
+  {
+   "take": "take_0525",
+   "label": "Stephen's take",
+   "decision": "reshow"
+  },
+  {
+   "take": "take_0526",
+   "label": "Stephen's take",
+   "decision": "reshow"
+  },
+  {
+   "take": "take_0527",
+   "label": "Stephen's take",
+   "decision": "reshow"
+  }
+ ]
+}

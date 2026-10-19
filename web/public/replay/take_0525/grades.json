@@ -1,0 +1,326 @@
+{
+ "schema_version": 1,
+ "take": "take_0525",
+ "duration_s": 6.1,
+ "overall": {
+  "pass": false,
+  "reason_codes": [
+   "foot_slip",
+   "out_of_balance"
+  ]
+ },
+ "cutoffs": {
+  "tracking_mean_abs_error_rad": 0.5,
+  "tracking_p95_abs_error_rad": 1.0,
+  "root_height_min_m": 0.2,
+  "root_tilt_max_deg": 35.0,
+  "foot_slip_seconds": 0.5,
+  "out_of_balance_seconds": 0.5
+ },
+ "models": {
+  "cosmos": "nvidia/Cosmos-Reason1-7B",
+  "supervl": "nvidia/Nemotron-3.5-Super-VL",
+  "fusion": "nvidia/Nemotron-3_5-Lightning"
+ },
+ "seconds": [
+  {
+   "start_s": 0.0,
+   "end_s": 1.0,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.22359,
+    "tracking_p95_abs_error_rad": 0.58833,
+    "root_tilt_max_deg": 18.623374,
+    "root_height_min_m": 0.759039,
+    "foot_slip_max_m_s": 1.486444,
+    "foot_slip_seconds": 0.365218,
+    "out_of_balance_seconds": 0.394818,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms slightly apart, suggesting a neutral or ready position. The robot's head is oriented forward, mirroring the human's gaze direction. There is no indication of significant differences in posture or body alignment between the two."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot is leaning forward with arms extended and one leg lifted, while the human stands upright with both feet on the ground and arms at their sides."
+   }
+  },
+  {
+   "start_s": 1.0,
+   "end_s": 2.0,
+   "rules": {
+    "pass": false,
+    "reason_codes": [
+     "tracking_p95_abs_error_rad"
+    ],
+    "tracking_mean_abs_error_rad": 0.372195,
+    "tracking_p95_abs_error_rad": 1.411234,
+    "root_tilt_max_deg": 5.341954,
+    "root_height_min_m": 0.77649,
+    "foot_slip_max_m_s": 0.920328,
+    "foot_slip_seconds": 0.020578,
+    "out_of_balance_seconds": 0.076165,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "Both the human and the robot have their arms raised above their heads and legs apart, indicating a similar pose."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot's arms are extended outward and one leg is lifted, while the human has both arms raised vertically and both feet on the ground."
+   }
+  },
+  {
+   "start_s": 2.0,
+   "end_s": 3.0,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.162197,
+    "tracking_p95_abs_error_rad": 0.403648,
+    "root_tilt_max_deg": 4.110944,
+    "root_height_min_m": 0.785715,
+    "foot_slip_max_m_s": 0.006602,
+    "foot_slip_seconds": 0.0,
+    "out_of_balance_seconds": 0.0,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "Both the human and the robot are standing with arms extended outward, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned symmetrically, indicating a matched pose."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot's arms are extended forward while the human's are down, and the robot's legs are straight while the human's are slightly bent."
+   }
+  },
+  {
+   "start_s": 3.0,
+   "end_s": 4.0,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.235678,
+    "tracking_p95_abs_error_rad": 0.784715,
+    "root_tilt_max_deg": 9.008638,
+    "root_height_min_m": 0.722157,
+    "foot_slip_max_m_s": 0.053214,
+    "foot_slip_seconds": 0.0,
+    "out_of_balance_seconds": 0.0,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "The robot's pose matches the human's in terms of stance and orientation. Both are standing upright with arms slightly extended outward, suggesting a neutral or ready position. The alignment of their upper and lower bodies indicates a synchronized posture."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot's arms are extended forward and downward while the human's arms are down at the sides, and the robot's feet are closer together than the human's stance."
+   }
+  },
+  {
+   "start_s": 4.0,
+   "end_s": 5.0,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.236171,
+    "tracking_p95_abs_error_rad": 0.571664,
+    "root_tilt_max_deg": 22.963166,
+    "root_height_min_m": 0.473044,
+    "foot_slip_max_m_s": 1.399362,
+    "foot_slip_seconds": 0.271743,
+    "out_of_balance_seconds": 0.226564,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot's pose does not match the human's. The robot is depicted in a dynamic stance with its arms extended forward and legs bent, suggesting movement or balance adjustment. In contrast, the human is kneeling on the floor with arms extended forward, indicating a stable position. The difference in posture and body orientation clearly distinguishes their poses."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The human is in a low squat with hands on the floor, while the robot is in a crouched but more upright stance with arms extended forward, resulting in different body configurations and orientations."
+   }
+  },
+  {
+   "start_s": 5.0,
+   "end_s": 6.0,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.263525,
+    "tracking_p95_abs_error_rad": 0.698819,
+    "root_tilt_max_deg": 23.134581,
+    "root_height_min_m": 0.488015,
+    "foot_slip_max_m_s": 0.302162,
+    "foot_slip_seconds": 0.117184,
+    "out_of_balance_seconds": 0.143488,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "The robot's pose closely matches the human's, with both having their arms extended outward and legs positioned in a stable stance. The upper bodies are upright, and the lower bodies show a slight forward lean, indicating readiness for movement. The orientation of both figures is consistent, facing the same direction, and there is no significant difference in their overall posture or balance."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The human is standing upright with arms extended sideways, while the robot is in a crouched, forward-leaning pose with arms reaching forward, indicating a significant mismatch in body configuration and orientation."
+   }
+  },
+  {
+   "start_s": 6.0,
+   "end_s": 6.1,
+   "rules": {
+    "pass": true,
+    "reason_codes": [],
+    "tracking_mean_abs_error_rad": 0.165446,
+    "tracking_p95_abs_error_rad": 0.518219,
+    "root_tilt_max_deg": 8.754308,
+    "root_height_min_m": 0.799711,
+    "foot_slip_max_m_s": 0.354823,
+    "foot_slip_seconds": 0.009919,
+    "out_of_balance_seconds": 0.432017,
+    "falls": 0
+   },
+   "cosmos": {
+    "match": true,
+    "status": "valid",
+    "reason_codes": [],
+    "summary": "Both the human and the robot have their arms extended outward and slightly bent at the elbows, mirroring each other's poses. The upper bodies are upright, and the lower bodies are positioned similarly, suggesting a coordinated stance. The robot's head is oriented forward, aligning with the human's gaze direction. There is no significant difference in posture or orientation between the two figures."
+   },
+   "supervl": {
+    "match": false,
+    "status": "valid",
+    "reason_codes": [
+     "upper_body_pose",
+     "lower_body_pose",
+     "orientation"
+    ],
+    "summary": "The robot's arms are extended forward and its body is angled, while the human's arms are extended to the sides and the body faces forward."
+   }
+  }
+ ],
+ "fusion": {
+  "decided_by": "deterministic_fallback",
+  "status": "fallback_after_guard_refusals",
+  "request_id": "55e67f4ad5ca373c73f65c11b0934400",
+  "cost_usd": 0.00030144,
+  "attempts": [
+   {
+    "attempt": 1,
+    "guard": "refused",
+    "guard_error": "re-show window [2.0, 3.0] must exactly match cited negative evidence",
+    "proposal": {
+     "decision": "reshow",
+     "reshow_windows": [
+      {
+       "start_s": 2.0,
+       "end_s": 3.0,
+       "reason": "tracking_p95_abs_error_rad in cited evidence"
+      },
+      {
+       "start_s": 5.0,
+       "end_s": 6.0,
+       "reason": "foot_slip in cited evidence"
+      }
+     ]
+    },
+    "latency_s": 0.897992
+   },
+   {
+    "attempt": 2,
+    "guard": "refused",
+    "guard_error": "re-show window [2.0, 3.0] must exactly match cited negative evidence",
+    "proposal": {
+     "decision": "reshow",
+     "reshow_windows": [
+      {
+       "start_s": 2.0,
+       "end_s": 3.0,
+       "reason": "tracking_p95_abs_error_rad in cited evidence"
+      },
+      {
+       "start_s": 5.0,
+       "end_s": 6.0,
+       "reason": "foot_slip in cited evidence"
+      }
+     ]
+    },
+    "latency_s": 0.806705
+   }
+  ],
+  "final": {
+   "decision": "reshow",
+   "evidence_refs": [
+    "metrics:second:1",
+    "visual:second:4"
+   ],
+   "reshow_windows": [
+    {
+     "end_s": 2.0,
+     "reason": "tracking_p95_abs_error_rad in cited evidence",
+     "start_s": 1.0
+    },
+    {
+     "end_s": 5.0,
+     "reason": "upper_body_pose in cited evidence",
+     "start_s": 4.0
+    }
+   ]
+  }
+ }
+}
