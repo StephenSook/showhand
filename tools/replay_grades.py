@@ -145,14 +145,16 @@ def main() -> int:
         record = grades(args.results, take, thresholds)
         out = args.web / take / "grades.json"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+        out.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
         label = load(args.results / take / "take_record.json")["label"]
         index.append(
             {"take": take, "label": label, "decision": record["fusion"]["final"]["decision"]}
         )
         print(out)
     (args.web / "index.json").write_text(
-        json.dumps({"schema_version": 1, "takes": index}, indent=1) + "\n", encoding="utf-8"
+        json.dumps({"schema_version": 1, "takes": index}, indent=1) + "\n",
+        encoding="utf-8",
+        newline="\n",
     )
     return 0
 

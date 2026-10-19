@@ -97,7 +97,7 @@ def main() -> int:
             "frames_sha256": hashlib.sha256((out_dir / "frames.bin").read_bytes()).hexdigest(),
         }
         (out_dir / "replay.json").write_text(
-            json.dumps(manifest, separators=(",", ":")) + "\n", encoding="utf-8"
+            json.dumps(manifest, separators=(",", ":")) + "\n", encoding="utf-8", newline="\n"
         )
         summary["takes"][take] = {
             "frames": replay["frames"],
