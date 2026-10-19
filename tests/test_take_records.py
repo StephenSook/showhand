@@ -15,13 +15,15 @@ MIN_RESULT_FILES = 34
 MAX_FILE_BYTES = 64 * 1024
 MAX_STRING_LENGTH = 2000
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/=]{200,}")
-FORBIDDEN_SEGMENTS = {"clips", "frames", "images", "pairs", "renders", "video"}
+DATA_IMAGE = re.compile(r"data:image", re.IGNORECASE)
+FORBIDDEN_SEGMENTS = {"artifacts", "clips", "frames", "images", "pairs", "renders", "video"}
 FORBIDDEN_PATH = re.compile(
     r"(?:(?:^|[\\/])(?:clips|frames|images|pairs|renders|video)(?=[\\/]|$)"
     r"|(?<![A-Za-z0-9_])(?:clips|frames|images|pairs|renders|video)(?=[\\/]))",
     re.IGNORECASE,
 )
-LOCAL_PATH = re.compile(r"(?:[A-Za-z]:[\\/]|/mnt/c/|/home/)", re.IGNORECASE)
+ARTIFACTS_PATH = re.compile(r"(?<![A-Za-z0-9_])artifacts[\\/]", re.IGNORECASE)
+LOCAL_PATH = re.compile(r"(?<![A-Za-z0-9])(?:[A-Za-z]:[\\/]|/mnt/c/|/home/)", re.IGNORECASE)
 
 
 def _strings(value, pointer: str = "$"):
@@ -54,6 +56,8 @@ def _assert_private_results(root: Path, minimum_files: int = MIN_RESULT_FILES) -
 
         text = path.read_text(encoding="utf-8")
         assert BASE64_RUN.search(text) is None, f"base64-looking run in {relative}"
+        assert DATA_IMAGE.search(text) is None, f"data image URL in {relative}"
+        assert ARTIFACTS_PATH.search(text) is None, f"artifacts path in {relative}"
         assert FORBIDDEN_PATH.search(text) is None, f"forbidden artifact path in {relative}"
         assert LOCAL_PATH.search(text) is None, f"absolute local path in {relative}"
 
@@ -74,13 +78,27 @@ def test_results_obey_take_record_privacy_contract() -> None:
     _assert_private_results(RESULTS)
 
 
-def test_privacy_guard_rejects_planted_base64_in_temporary_copy(tmp_path: Path) -> None:
+def test_local_path_pattern_does_not_treat_https_as_a_drive_path() -> None:
+    assert LOCAL_PATH.search("https://api.tokenfactory.nebius.com/v1") is None
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ("A" * 200, "base64-looking run"),
+        ("data:image/jpeg;base64,abc", "data image URL"),
+        ("artifacts/runs/take_0525/visual/window-000.jpg", "artifacts path"),
+    ],
+)
+def test_privacy_guard_rejects_planted_private_data(
+    tmp_path: Path, payload: str, message: str
+) -> None:
     copied_results = tmp_path / "results"
     shutil.copytree(RESULTS, copied_results)
     planted = copied_results / "planted.json"
-    planted.write_text(json.dumps({"payload": "A" * 200}), encoding="utf-8")
+    planted.write_text(json.dumps({"payload": payload}), encoding="utf-8")
 
-    with pytest.raises(AssertionError, match="base64-looking run"):
+    with pytest.raises(AssertionError, match=message):
         _assert_private_results(copied_results)
 
 

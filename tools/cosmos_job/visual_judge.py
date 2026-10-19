@@ -10,10 +10,6 @@ import re
 import time
 from pathlib import Path
 
-import torch
-from qwen_vl_utils import process_vision_info
-from transformers import AutoModelForMultimodalLM, AutoProcessor
-
 MODEL_ID = "nvidia/Cosmos-Reason1-7B"
 MODEL_REVISION = "375e24000b24baed78f4618d3dd779e47cd96323"
 CONTAINER_IMAGE_DIGEST = "sha256:eee11b3b3872a8c838e35ef48f08b2d5def2080902c7f666831310ca1a0ef2be"
@@ -34,6 +30,30 @@ FIXED_QUESTION = (
 )
 
 
+def validate_verdict(value: object, source: str = "Cosmos") -> dict:
+    """Validate the fixed per-window visual verdict shared by both visual judges."""
+
+    if not isinstance(value, dict):
+        raise ValueError(f"{source} structured output is not an object")
+    expected = {"match", "reason_codes", "summary"}
+    if set(value) != expected:
+        raise ValueError(f"{source} output keys differ from schema: {sorted(value)}")
+    if not isinstance(value["match"], bool):
+        raise ValueError(f"{source} match is not a boolean")
+    if not isinstance(value["reason_codes"], list):
+        raise ValueError(f"{source} reason_codes is not a list")
+    unknown = set(value["reason_codes"]).difference(REASON_CODES)
+    if unknown:
+        raise ValueError(f"{source} returned unknown reason codes: {sorted(unknown)}")
+    if value["match"] and value["reason_codes"]:
+        raise ValueError(f"{source} match carries mismatch reason codes")
+    if not value["match"] and not value["reason_codes"]:
+        raise ValueError(f"{source} mismatch has no reason code")
+    if not isinstance(value["summary"], str) or not value["summary"].strip():
+        raise ValueError(f"{source} summary is empty")
+    return value
+
+
 def _parse_object(raw: str) -> dict:
     answer_match = re.search(r"<answer>\s*(.*?)\s*</answer>", raw, flags=re.DOTALL)
     candidate = answer_match.group(1) if answer_match else raw
@@ -41,28 +61,14 @@ def _parse_object(raw: str) -> dict:
     if start < 0:
         raise ValueError("Cosmos output contains no JSON object")
     value, _ = json.JSONDecoder().raw_decode(candidate[start:])
-    if not isinstance(value, dict):
-        raise ValueError("Cosmos structured output is not an object")
-    expected = {"match", "reason_codes", "summary"}
-    if set(value) != expected:
-        raise ValueError(f"Cosmos output keys differ from schema: {sorted(value)}")
-    if not isinstance(value["match"], bool):
-        raise ValueError("Cosmos match is not a boolean")
-    if not isinstance(value["reason_codes"], list):
-        raise ValueError("Cosmos reason_codes is not a list")
-    unknown = set(value["reason_codes"]).difference(REASON_CODES)
-    if unknown:
-        raise ValueError(f"Cosmos returned unknown reason codes: {sorted(unknown)}")
-    if value["match"] and value["reason_codes"]:
-        raise ValueError("Cosmos match carries mismatch reason codes")
-    if not value["match"] and not value["reason_codes"]:
-        raise ValueError("Cosmos mismatch has no reason code")
-    if not isinstance(value["summary"], str) or not value["summary"].strip():
-        raise ValueError("Cosmos summary is empty")
-    return value
+    return validate_verdict(value)
 
 
 def main() -> None:
+    import torch
+    from qwen_vl_utils import process_vision_info
+    from transformers import AutoModelForMultimodalLM, AutoProcessor
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--take-id", required=True)
     parser.add_argument("--manifest", required=True)
