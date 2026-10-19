@@ -55,3 +55,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+
+# Replay web app: dependencies, builds, test output, Vercel link.
+node_modules/
+.vercel/
+test-results/
+playwright-report/

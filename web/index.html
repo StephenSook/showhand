@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Showhand replay</title>
+    <meta
+      name="description"
+      content="Three recorded takes beside a simulated Unitree G1 replaying them, with every second Showhand measured, what two vision models said, and the seconds it sent back to re-show."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-ready="false">
+    <header class="masthead wrap">
+      <p class="wordmark">Showhand</p>
+      <h1>Watch a simulated humanoid copy a recorded move, then see which seconds go back.</h1>
+      <p class="lede">
+        Each take is a phone recording beside a Unitree G1 in the MuJoCo simulator, driven through the
+        same move by NVIDIA's GEAR-SONIC controller. Showhand measures the replay second by second, asks
+        two vision models whether the poses match, and answers accept or names the seconds to show again.
+      </p>
+    </header>
+
+    <main class="wrap">
+      <div id="error" class="error" role="alert" hidden></div>
+
+      <nav class="takes" id="takes" aria-label="Takes"></nav>
+
+      <section class="stage" aria-label="Replay">
+        <figure class="pane pane-video">
+          <video id="video" muted playsinline loop preload="auto" aria-label="Phone recording of the take"></video>
+          <div id="missing-video" class="missing-video" hidden>
+            The phone recording is not part of this build. The robot replay and every grade below are.
+          </div>
+          <figcaption><span>Phone recording</span></figcaption>
+        </figure>
+        <figure class="pane pane-robot">
+          <canvas id="robot" aria-label="Simulated Unitree G1 replaying the take. Drag to turn the view."></canvas>
+          <figcaption>
+            <span class="long">Simulated G1. Ring under the robot turns orange while it is out of balance. Drag to turn.</span>
+            <span class="short">Simulated G1. Drag to turn.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <div class="transport">
+        <button class="play" id="play" type="button" aria-pressed="false">Play</button>
+        <p class="clock" id="clock" aria-live="off">0:00.0</p>
+        <input
+          class="scrub"
+          id="scrub"
+          type="range"
+          min="0"
+          max="1"
+          step="0.0333"
+          value="0"
+          aria-label="Position in the take"
+        />
+        <div class="speeds" role="group" aria-label="Playback speed">
+          <button type="button" data-rate="0.25" aria-pressed="false">0.25x</button>
+          <button type="button" data-rate="0.5" aria-pressed="false">0.5x</button>
+          <button type="button" data-rate="1" aria-pressed="true">1x</button>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <h2 id="timeline-heading">Every second, every judge</h2>
+        <p class="verdict" id="verdict"></p>
+      </div>
+      <section class="timeline" id="timeline" aria-labelledby="timeline-heading"></section>
+      <ul class="legend" aria-label="Legend">
+        <li><span class="swatch pass" aria-hidden="true">✓</span>Passed or matched</li>
+        <li><span class="swatch fail" aria-hidden="true">✗</span>Failed or did not match</li>
+        <li><span class="swatch refused" aria-hidden="true"></span>Nemotron proposal the guard refused</li>
+        <li><span class="swatch final" aria-hidden="true"></span>Seconds sent back to re-show</li>
+      </ul>
+
+      <div class="detail">
+        <article class="panel" id="second" aria-labelledby="second-heading"></article>
+        <article class="panel" id="fusion" aria-labelledby="fusion-heading"></article>
+      </div>
+    </main>
+
+    <footer class="wrap">
+      <p>
+        No physical robot was used. The robot is NVIDIA's GEAR-SONIC whole-body controller driving a
+        simulated Unitree G1 in MuJoCo, fed the body motion GEM-X estimated from the phone recording. Each
+        pose here is MuJoCo's forward kinematics of the joint states the replay logged, sampled at the
+        video's 30 frames per second.
+      </p>
+      <p>
+        Grades come from the committed take records in
+        <a href="https://github.com/StephenSook/showhand">github.com/StephenSook/showhand</a>. The limits are
+        the frozen cutoffs in <code>config/thresholds.yaml</code>, set before the first graded take.
+      </p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
