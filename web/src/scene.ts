@@ -169,9 +169,11 @@ export class RobotScene {
     forward.normalize();
     const facing = new THREE.Vector3(forward.x, 0, -forward.y).applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.38);
     const pelvis = this.pelvisWorld(new THREE.Vector3());
-    const target = new THREE.Vector3(pelvis.x, pelvis.y - 0.08, pelvis.z);
+    // Aim a little below the pelvis and stand back far enough that raised hands and the balance
+    // ring under the feet both stay clear of the caption along the bottom of the pane.
+    const target = new THREE.Vector3(pelvis.x, pelvis.y - 0.16, pelvis.z);
     this.controls.target.copy(target);
-    this.camera.position.copy(target).addScaledVector(facing, 3.1).add(new THREE.Vector3(0, 0.32, 0));
+    this.camera.position.copy(target).addScaledVector(facing, 3.45).add(new THREE.Vector3(0, 0.32, 0));
     this.sun.target.position.copy(target);
     this.controls.update();
   }
