@@ -50,6 +50,38 @@ test("loads every take with its grades and a drawn robot", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("the answer sits above the video and its seconds are painted on the seek bar", async ({ page }) => {
+  await open(page, "/?take=take_0525");
+  await expect(page.locator("#call-line")).toHaveText("Re-show 1 to 2 s (worst joint error) and 4 to 5 s (upper body pose)");
+  const call = (await page.locator("#call").boundingBox())!;
+  const stage = (await page.locator(".stage").boundingBox())!;
+  expect(call.y + call.height).toBeLessThanOrEqual(stage.y);
+
+  const ranges = page.locator("#seek-track .seek-range");
+  await expect(ranges).toHaveCount(2);
+  await expect(ranges.nth(0)).toHaveAttribute("data-start", "1");
+  await expect(ranges.nth(0)).toHaveAttribute("data-end", "2");
+  await expect(ranges.nth(1)).toHaveAttribute("data-start", "4");
+  await expect(ranges.nth(1)).toHaveAttribute("data-end", "5");
+  // Painted where those seconds are on a 6.1 s take, not just listed.
+  const track = (await page.locator("#seek-track").boundingBox())!;
+  const first = (await ranges.nth(0).boundingBox())!;
+  expect((first.x - track.x) / track.width).toBeCloseTo(1 / 6.1, 2);
+  expect(first.width / track.width).toBeCloseTo(1 / 6.1, 2);
+
+  await page.getByRole("button", { name: /Take 0526/ }).click();
+  await expect(page.locator("#call-line")).toHaveText("Re-show 0 to 1 s: out of balance");
+  await expect(ranges).toHaveCount(1);
+});
+
+test("a phone's first screen carries the answer and each take's verdict", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+  const line = (await page.locator("#call-line").boundingBox())!;
+  expect(line.y + line.height).toBeLessThanOrEqual(844);
+  for (const tab of await page.locator(".take span").all()) await expect(tab).toBeVisible();
+});
+
 test("a cell click moves the clock and the detail card to that second", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: /Measured, 1 to 2 s: failed on worst joint error/ }).click();

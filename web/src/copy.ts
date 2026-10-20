@@ -1,7 +1,8 @@
 // Plain-language names for the codes in grades.json. An unknown code still prints (with its
 // underscores turned into spaces) so a new code from the grader never disappears from the page.
 
-import type { RuleRow } from "./data";
+import type { ReshowWindow, RuleRow } from "./data";
+import { span } from "./time";
 
 const REASONS: Record<string, string> = {
   tracking_mean_abs_error_rad: "mean joint error",
@@ -59,6 +60,26 @@ export function limitText(spec: MetricSpec, cutoffs: Record<string, number>): st
 export function valueText(spec: MetricSpec, value: number): string {
   const unit = spec.unit === "" ? "" : spec.unit === "°" ? "°" : ` ${spec.unit}`;
   return `${value.toFixed(spec.digits)}${unit}`;
+}
+
+// The guard only passes a re-show reason written as "<reason_code> in cited evidence", so the
+// code is read back out of it. Anything else prints as the record has it.
+export function windowReason(reason: string): string {
+  const match = /^(\S+) in cited evidence$/.exec(reason);
+  return match ? reasonLabel(match[1]!) : reason;
+}
+
+// The one-line answer above the video: which seconds go back, and why, from the final decision.
+export function callLine(final: { decision: string; reshow_windows: ReshowWindow[] }): string {
+  if (final.decision === "accept") return "Accepted. No second goes back.";
+  const windows = final.reshow_windows;
+  if (windows.length === 0) return "Re-show the whole take. No single second failed on its own.";
+  if (windows.length === 1) {
+    const w = windows[0]!;
+    return `Re-show ${span(w.start_s, w.end_s)}: ${windowReason(w.reason)}`;
+  }
+  const parts = windows.map((w) => `${span(w.start_s, w.end_s)} (${windowReason(w.reason)})`);
+  return `Re-show ${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
 export function decidedByText(decidedBy: string, status: string): string {

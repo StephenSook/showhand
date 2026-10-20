@@ -105,8 +105,8 @@ a {
 
 h1 {
   margin: 0;
-  font: 700 clamp(1.9rem, 1.2rem + 2.6vw, 3.1rem) / 1.02 var(--display);
-  max-width: 26ch;
+  font: 700 clamp(1.9rem, 1.2rem + 2.2vw, 2.6rem) / 1.02 var(--display);
+  max-width: 46ch;
   text-wrap: balance;
 }
 
@@ -117,9 +117,14 @@ h1 {
 }
 
 @media (min-width: 1000px) {
+  :root {
+    /* Short enough that the band, the stage and the seek bar all fit a 900 px tall window. */
+    --stage-h: min(53vh, 620px);
+  }
   .masthead {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
     align-items: end;
+    padding: 22px 0 12px;
   }
   .wordmark {
     grid-column: 1 / -1;
@@ -134,7 +139,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 8px 0 14px;
+  margin: 8px 0 10px;
 }
 
 .take {
@@ -164,6 +169,30 @@ h1 {
 .take[aria-pressed="true"] {
   border-color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* The answer, as a band on top of the stage at every width: it is what the take is for, so it
+   reads first and in the stage's own ink. */
+.call {
+  margin: 0 0 8px;
+  padding: 10px 16px 12px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.call:has(.call-line:empty) {
+  visibility: hidden;
+}
+
+.call :focus-visible {
+  outline-color: var(--paper);
+}
+
+.call-line {
+  margin: 0;
+  font: 700 clamp(1.4rem, 1rem + 1.4vw, 2.2rem) / 1.08 var(--display);
+  letter-spacing: 0.005em;
 }
 
 /* Stage: the phone video beside the robot, same height, same clock. */
@@ -267,6 +296,7 @@ h1 {
 }
 
 .clock {
+  margin: 0;
   font: 700 1.5rem/1 var(--display);
   min-width: 7.5ch;
 }
@@ -276,10 +306,78 @@ h1 {
   color: var(--ink-3);
 }
 
-.scrub {
+/* Seek bar: a plain track with the re-show seconds painted on it, under a transparent range input.
+   The painted layer is inset by half a thumb on each side, so a range's edge sits exactly where
+   the thumb's centre is at that time. */
+.seek {
+  --thumb: 18px;
+  --seek-h: 30px;
+  position: relative;
   flex: 1 1 220px;
-  accent-color: var(--ink);
   min-width: 0;
+  height: var(--seek-h);
+}
+
+.seek-track {
+  position: absolute;
+  left: calc(var(--thumb) / 2);
+  right: calc(var(--thumb) / 2);
+  top: 50%;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 5px;
+  background: var(--grid);
+}
+
+.seek-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.scrub {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: var(--seek-h);
+  background: transparent;
+}
+
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((var(--seek-h) - var(--thumb)) / 2);
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  box-sizing: border-box;
+}
+
+.scrub::-moz-range-track {
+  height: var(--seek-h);
+  background: transparent;
+}
+
+.scrub::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  box-sizing: border-box;
 }
 
 .speeds {
@@ -731,10 +829,12 @@ footer p {
   .take {
     min-width: 0;
     flex: 1 1 0;
-    padding: 7px 10px;
+    padding: 7px 9px 8px;
+    align-content: start;
   }
   .take span {
-    display: none;
+    font-size: 0.72rem;
+    line-height: 1.25;
   }
   .lane-label {
     font-size: 0.74rem;

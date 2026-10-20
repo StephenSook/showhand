@@ -3,7 +3,7 @@ import { loadIndex, loadTake, type Grades, type SecondRow, type Take, type Verdi
 import { TimerClock, VideoClock, videoReady, type Clock } from "./clock";
 import { RobotScene, type SceneColors } from "./scene";
 import { UNIT_SPACE, frameAt, formatClock, replayDuration, sameWindows, secondAt, span, spans } from "./time";
-import { METRICS, decidedByText, limitText, reasonList, valueText } from "./copy";
+import { METRICS, callLine, decidedByText, limitText, reasonList, valueText, windowReason } from "./copy";
 
 const BASE = "/replay";
 
@@ -266,6 +266,29 @@ function overallText(g: Grades): string {
   return `${measured} ${decision}`;
 }
 
+// ---- the answer above the video, and the same seconds on the seek bar ----
+function renderCall(t: Take): void {
+  byId<HTMLElement>("call-line").textContent = callLine(t.grades.fusion.final);
+}
+
+function renderSeekRanges(t: Take): void {
+  const track = byId<HTMLElement>("seek-track");
+  const windows = t.grades.fusion.final.reshow_windows;
+  track.replaceChildren(
+    ...windows.map((w) => {
+      const end = Math.min(w.end_s, duration);
+      return el("span", {
+        class: "seek-range",
+        style: `left: ${pct(w.start_s, duration)}; width: ${pct(Math.max(0, end - w.start_s), duration)}`,
+        title: `Re-show ${span(w.start_s, w.end_s)}: ${windowReason(w.reason)}`,
+        "data-start": String(w.start_s),
+        "data-end": String(w.end_s),
+      });
+    }),
+  );
+  track.dataset.ranges = String(windows.length);
+}
+
 // ---- detail panels ----
 function renderSecond(index: number): void {
   const g = take.grades;
@@ -409,6 +432,8 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   document.querySelectorAll<HTMLButtonElement>(".take").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.take === id)));
   if (userAction) history.replaceState(null, "", `?take=${id}`);
   robot.bind(take);
+  // The answer does not depend on the video, so it changes the moment the take does.
+  renderCall(take);
 
   const replaySeconds = replayDuration(take.replay.fps, take.replay.frames);
   const mine = ++selection;
@@ -431,6 +456,7 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   scrub.max = String(duration);
   scrub.step = String(1 / take.replay.fps);
   shownSecond = -1;
+  renderSeekRanges(take);
   renderTimeline(take);
   renderFusion();
   byId<HTMLElement>("verdict").textContent = overallText(take.grades);

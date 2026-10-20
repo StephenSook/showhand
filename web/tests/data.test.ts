@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkFrames, checkGrades, checkIndex, checkReplay, type ReplayManifest } from "../src/data";
-import { limitText, METRICS, reasonLabel, reasonList, valueText, decidedByText } from "../src/copy";
+import { callLine, limitText, METRICS, reasonLabel, reasonList, valueText, decidedByText, windowReason } from "../src/copy";
 
 function replay(frames = 3, geoms = 2): ReplayManifest {
   return {
@@ -121,6 +121,27 @@ describe("copy", () => {
     const height = METRICS.find((m) => m.field === "root_height_min_m")!;
     expect(limitText(height, { root_height_min_m: 0.2 })).toBe("at least 0.2 m");
     expect(valueText(height, 0.785715)).toBe("0.79 m");
+  });
+  it("reads the reason code back out of a guarded re-show reason", () => {
+    expect(windowReason("tracking_p95_abs_error_rad in cited evidence")).toBe("worst joint error");
+    expect(windowReason("something the guard never wrote")).toBe("something the guard never wrote");
+  });
+  it("writes the answer line from the final decision, never from its own copy", () => {
+    const nb = " ";
+    expect(
+      callLine({ decision: "reshow", reshow_windows: [{ start_s: 0, end_s: 1, reason: "out_of_balance in cited evidence" }] }),
+    ).toBe(`Re-show 0 to 1${nb}s: out of balance`);
+    expect(
+      callLine({
+        decision: "reshow",
+        reshow_windows: [
+          { start_s: 1, end_s: 2, reason: "tracking_p95_abs_error_rad in cited evidence" },
+          { start_s: 4, end_s: 5, reason: "upper_body_pose in cited evidence" },
+        ],
+      }),
+    ).toBe(`Re-show 1 to 2${nb}s (worst joint error) and 4 to 5${nb}s (upper body pose)`);
+    expect(callLine({ decision: "accept", reshow_windows: [] })).toBe("Accepted. No second goes back.");
+    expect(callLine({ decision: "reshow", reshow_windows: [] })).toMatch(/whole take/);
   });
   it("explains each fusion outcome the grader writes", () => {
     expect(decidedByText("deterministic_fallback", "fallback_after_guard_refusals")).toMatch(/fell back/);
