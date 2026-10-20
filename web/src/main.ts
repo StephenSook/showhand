@@ -324,15 +324,15 @@ function showSeconds(start: number): void {
   }
 }
 
-function renderSeekRanges(t: Take): void {
+function renderSeekRanges(t: Take, total: number): void {
   const track = byId<HTMLElement>("seek-track");
   const windows = t.grades.fusion.final.reshow_windows;
   track.replaceChildren(
     ...windows.map((w) => {
-      const end = Math.min(w.end_s, duration);
+      const end = Math.min(w.end_s, total);
       return el("span", {
         class: "seek-range",
-        style: `left: ${pct(w.start_s, duration)}; width: ${pct(Math.max(0, end - w.start_s), duration)}`,
+        style: `left: ${pct(w.start_s, total)}; width: ${pct(Math.max(0, end - w.start_s), total)}`,
         title: `Re-show ${span(w.start_s, w.end_s)}: ${windowReason(w.reason)}`,
         "data-start": String(w.start_s),
         "data-end": String(w.end_s),
@@ -515,6 +515,9 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   renderRuns(take);
 
   const replaySeconds = replayDuration(take.replay.fps, take.replay.frames);
+  // The seek bar's seconds belong to the answer above it, so they change with it too. They are drawn
+  // on the replay's length now and redrawn on the clock's length once the clip has loaded.
+  renderSeekRanges(take, replaySeconds);
   const mine = ++selection;
   const hasVideo = await videoReady(video, `${BASE}/${id}/source.mp4`);
   if (mine !== selection) return;
@@ -535,7 +538,7 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   scrub.max = String(duration);
   scrub.step = String(1 / take.replay.fps);
   shownSecond = -1;
-  renderSeekRanges(take);
+  renderSeekRanges(take, duration);
   renderTimeline(take);
   renderFusion();
   byId<HTMLElement>("verdict").textContent = overallText(take.grades);

@@ -83,15 +83,35 @@ test("the answer sits above the video and its seconds are painted on the seek ba
   await expect(ranges.nth(0)).toHaveAttribute("data-end", "2");
   await expect(ranges.nth(1)).toHaveAttribute("data-start", "4");
   await expect(ranges.nth(1)).toHaveAttribute("data-end", "5");
-  // Painted where those seconds are on a 6.1 s take, not just listed.
-  const track = (await page.locator("#seek-track").boundingBox())!;
-  const first = (await ranges.nth(0).boundingBox())!;
-  expect((first.x - track.x) / track.width).toBeCloseTo(1 / 6.1, 2);
-  expect(first.width / track.width).toBeCloseTo(1 / 6.1, 2);
+  // Painted where those seconds are on a 6.1 s take, not just listed. Both boxes are read in one
+  // frame: the clip's aspect ratio can reflow the page between two separate reads.
+  const [left, width] = await page.locator("#seek-track").evaluate((track) => {
+    const box = track.getBoundingClientRect();
+    const first = track.querySelector(".seek-range")!.getBoundingClientRect();
+    return [(first.left - box.left) / box.width, first.width / box.width];
+  });
+  expect(left).toBeCloseTo(1 / 6.1, 2);
+  expect(width).toBeCloseTo(1 / 6.1, 2);
 
   await page.getByRole("button", { name: /Take 0526/ }).click();
   await expect(page.locator("#call-line")).toHaveText("Re-show 0 to 1 s: out of balance");
   await expect(ranges).toHaveCount(1);
+});
+
+test("the seek bar's seconds change with the answer, before the next clip has loaded", async ({ page }) => {
+  await open(page, "/?take=take_0525");
+  await expect(page.locator("#seek-track .seek-range")).toHaveCount(2);
+  // Hold take 0526's clip back well past the assertion below.
+  await page.route("**/take_0526/source.mp4", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 8_000));
+    await route.continue().catch(() => undefined);
+  });
+  await page.getByRole("button", { name: /Take 0526/ }).click();
+  await expect(page.locator("#call-line")).toHaveText("Re-show 0 to 1 s: out of balance");
+  const ranges = page.locator("#seek-track .seek-range");
+  await expect(ranges).toHaveCount(1, { timeout: 2_000 });
+  await expect(ranges.nth(0)).toHaveAttribute("data-start", "0");
+  await expect(ranges.nth(0)).toHaveAttribute("data-end", "1");
 });
 
 test("a phone's first screen carries the answer and each take's verdict", async ({ page }) => {
