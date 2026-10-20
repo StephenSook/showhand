@@ -1,7 +1,7 @@
 // Plain-language names for the codes in grades.json. An unknown code still prints (with its
 // underscores turned into spaces) so a new code from the grader never disappears from the page.
 
-import type { ReshowWindow, RuleRow, SecondRow } from "./data";
+import type { Attempt, Grades, ReshowWindow, RuleRow, SecondRow } from "./data";
 import { span, spans } from "./time";
 
 const REASONS: Record<string, string> = {
@@ -104,6 +104,40 @@ export function unsentSentence(rows: SecondRow[]): string {
   if (rows.length === 0) return "";
   const verb = rows.length === 1 ? "is" : "are";
   return `The guard checks that each second sent back is backed by failing evidence, not that every failing second is sent back: ${spans(rows)} also failed and ${verb} not in the list.`;
+}
+
+type FusionRecord = Pick<Grades["fusion"], "decided_by" | "attempts">;
+
+function firstAnswer(attempt: Attempt): string {
+  const proposal = attempt.proposal;
+  if (proposal === null) return "Nemotron's first answer could not be read";
+  if (proposal.decision === "accept") return "Nemotron first answered accept";
+  return `Nemotron first proposed re-showing ${spans(proposal.reshow_windows)}`;
+}
+
+// A take where the guard refused an answer and a later try passed: the loop catching the model.
+export function guardCaught(fusion: FusionRecord): boolean {
+  const passed = fusion.attempts.findIndex((a) => a.guard === "passed");
+  return fusion.decided_by === "nemotron" && passed > 0 && fusion.attempts[0]!.guard !== "passed";
+}
+
+// One sentence, under the answer, on what the guard did with Nemotron's answers.
+export function catchLine(fusion: FusionRecord): string {
+  const attempts = fusion.attempts;
+  if (attempts.length === 0) return "";
+  const first = attempts[0]!;
+  if (guardCaught(fusion)) {
+    const passed = attempts.find((a) => a.guard === "passed")!;
+    const retry = passed.attempt === 2 ? "the retry" : `try ${passed.attempt}`;
+    return `${firstAnswer(first)}, the guard refused it ("${first.guard_error ?? "no reason recorded"}"), and ${retry} passed.`;
+  }
+  if (fusion.decided_by === "deterministic_fallback") {
+    const errors = [...new Set(attempts.map((a) => a.guard_error ?? "no reason recorded"))];
+    const count = attempts.length === 2 ? "both" : `all ${attempts.length}`;
+    return `The guard refused ${count} of Nemotron's answers ("${errors.join('"; "')}"), so Showhand re-showed every second that failed a measured limit or that Cosmos Reason1 marked as no match.`;
+  }
+  if (first.guard === "passed") return "The guard passed Nemotron's first answer.";
+  return "";
 }
 
 export function decidedByText(decidedBy: string, status: string): string {

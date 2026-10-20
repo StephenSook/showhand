@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { checkFrames, checkGrades, checkIndex, checkReplay, type ReplayManifest } from "../src/data";
 import {
   callLine,
+  catchLine,
   decidedByText,
+  guardCaught,
   limitText,
   METRICS,
   reasonLabel,
@@ -181,6 +183,32 @@ describe("copy", () => {
     expect(left.map((r) => r.start_s)).toEqual([1]);
     expect(unsentSentence(left)).toMatch(/1 to 2.s also failed and is not in the list/);
     expect(unsentSentence([])).toBe("");
+  });
+  it("says in one sentence what the guard did with Nemotron's answers", () => {
+    const accept = { decision: "accept", reshow_windows: [] };
+    const caught = {
+      decided_by: "nemotron",
+      attempts: [
+        { attempt: 1, guard: "refused", guard_error: "accept contradicts mandatory negative evidence", proposal: accept, latency_s: 0.9 },
+        { attempt: 2, guard: "passed", guard_error: null, proposal: accept, latency_s: 0.7 },
+      ],
+    };
+    expect(guardCaught(caught)).toBe(true);
+    expect(catchLine(caught)).toBe(
+      'Nemotron first answered accept, the guard refused it ("accept contradicts mandatory negative evidence"), and the retry passed.',
+    );
+    const fellBack = {
+      decided_by: "deterministic_fallback",
+      attempts: [
+        { attempt: 1, guard: "refused", guard_error: "e", proposal: accept, latency_s: 1 },
+        { attempt: 2, guard: "refused", guard_error: "e", proposal: accept, latency_s: 1 },
+      ],
+    };
+    expect(guardCaught(fellBack)).toBe(false);
+    expect(catchLine(fellBack)).toMatch(/^The guard refused both of Nemotron's answers \("e"\), so Showhand re-showed/);
+    const first = { decided_by: "nemotron", attempts: [{ ...caught.attempts[1]!, attempt: 1 }] };
+    expect(guardCaught(first)).toBe(false);
+    expect(catchLine(first)).toBe("The guard passed Nemotron's first answer.");
   });
   it("explains each fusion outcome the grader writes", () => {
     expect(decidedByText("deterministic_fallback", "fallback_after_guard_refusals")).toMatch(/fell back/);

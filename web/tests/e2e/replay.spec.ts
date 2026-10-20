@@ -18,8 +18,28 @@ async function open(page: Page, path = "/"): Promise<string[]> {
   return errors;
 }
 
-test("loads every take with its grades and a drawn robot", async ({ page }) => {
+test("opens on the take where the guard catches Nemotron, and says so in one sentence", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   const errors = await open(page);
+  await expect(page.locator("body")).toHaveAttribute("data-take", "take_0526");
+  // The answer, the catch and the seek bar with its painted seconds all fit the first screen.
+  const seek = (await page.locator(".seek").boundingBox())!;
+  expect(seek.y + seek.height).toBeLessThanOrEqual(900);
+  await expect(page.getByRole("button", { name: /Take 0526/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#call-line")).toHaveText("Re-show 0 to 1 s: out of balance");
+  // results/takes/take_0526/fusion.json: try 1 answered accept, the guard refused it, try 2 passed.
+  await expect(page.locator("#call-catch")).toHaveText(
+    'Nemotron first answered accept, the guard refused it ("accept contradicts mandatory negative evidence"), and the retry passed.',
+  );
+  // An unknown ?take= falls back to the same default, a known one still wins.
+  await page.goto("/?take=take_9999");
+  await expect(page.locator("body")).toHaveAttribute("data-ready", "true", { timeout: 30_000 });
+  await expect(page.locator("body")).toHaveAttribute("data-take", "take_0526");
+  expect(errors).toEqual([]);
+});
+
+test("loads every take with its grades and a drawn robot", async ({ page }) => {
+  const errors = await open(page, "/?take=take_0525");
   await expect(page.locator(".take")).toHaveCount(3);
   await expect(page.locator("body")).toHaveAttribute("data-clock", clipsPresent ? "video" : "timer");
   if (clipsPresent) await expect(page.locator("#missing-video")).toBeHidden();
@@ -111,7 +131,7 @@ test("says beside the video where each stage ran, with that take's recorded time
   await expect(page.locator("#run-replay")).toHaveText("25.6 s");
   await expect(page.locator("#run-cosmos")).toHaveText("283.1 s");
   await expect(page.locator("#run-supervl")).toHaveText("14.5 s, $0.00163");
-  await expect(page.locator("#run-supervl-count")).toHaveText("7 one-second checks");
+  await expect(page.locator("#run-supervl-count")).toHaveText("7 seconds checked");
   // Beside the stage, inside the first 1440x900 screen.
   const stage = (await page.locator(".stage").boundingBox())!;
   const box = (await runs.boundingBox())!;
@@ -121,11 +141,11 @@ test("says beside the video where each stage ran, with that take's recorded time
 
   await page.getByRole("button", { name: /Take 0526/ }).click();
   await expect(page.locator("#run-gemx")).toHaveText("289.8 s");
-  await expect(page.locator("#run-supervl-count")).toHaveText("7 one-second checks");
+  await expect(page.locator("#run-supervl-count")).toHaveText("7 seconds checked");
 });
 
 test("a cell click moves the clock and the detail card to that second", async ({ page }) => {
-  await open(page);
+  await open(page, "/?take=take_0525");
   await page.getByRole("button", { name: /Measured, 1 to 2 s: failed on worst joint error/ }).click();
   await expect(page.locator("#second-heading")).toHaveText("Second 1 to 2");
   await expect(page.locator("#second")).toContainText("Over the limit on worst joint error.");
@@ -137,7 +157,7 @@ test("a cell click moves the clock and the detail card to that second", async ({
 });
 
 test("switching takes swaps the record and keeps the choice in the address", async ({ page }) => {
-  await open(page);
+  await open(page, "/?take=take_0525");
   await page.getByRole("button", { name: /Take 0526/ }).click();
   await expect(page).toHaveURL(/\?take=take_0526$/);
   await expect(page.locator("body")).toHaveAttribute("data-take", "take_0526");

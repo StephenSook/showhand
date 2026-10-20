@@ -195,6 +195,18 @@ h1 {
   letter-spacing: 0.005em;
 }
 
+.call-catch {
+  margin: 4px 0 0;
+  max-width: 96ch;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--paper) 84%, var(--ink));
+}
+
+.call-catch[hidden] {
+  display: none;
+}
+
 /* Replay block: the stage, where it ran, and the transport. One column on narrow screens
    (stage, transport, then where it ran); on wide ones "where it ran" stands beside the stage. */
 .replay {

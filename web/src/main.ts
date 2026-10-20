@@ -8,7 +8,9 @@ import {
   METRICS,
   SUPERVL_RULE,
   callLine,
+  catchLine,
   decidedByText,
+  guardCaught,
   limitText,
   reasonList,
   unsentFailingSeconds,
@@ -282,6 +284,10 @@ function overallText(g: Grades): string {
 // ---- the answer above the video, and the same seconds on the seek bar ----
 function renderCall(t: Take): void {
   byId<HTMLElement>("call-line").textContent = callLine(t.grades.fusion.final);
+  const caught = catchLine(t.grades.fusion);
+  const line = byId<HTMLElement>("call-catch");
+  line.textContent = caught;
+  line.hidden = caught === "";
 }
 
 function renderSeekRanges(t: Take): void {
@@ -317,7 +323,7 @@ function renderRuns(t: Take): void {
   byId<HTMLElement>("run-replay").textContent = secondsText(r.replay_process_wall_s);
   byId<HTMLElement>("run-cosmos").textContent = secondsText(r.cosmos_model_load_s);
   const checks = t.grades.seconds.filter((row) => row.supervl !== null).length;
-  byId<HTMLElement>("run-supervl-count").textContent = `${checks} one-second checks`;
+  byId<HTMLElement>("run-supervl-count").textContent = `${checks} seconds checked`;
   byId<HTMLElement>("run-supervl").textContent = `${secondsText(r.supervl_wall_s)}, ${usd(r.supervl_cost_usd)}`;
 }
 
@@ -538,8 +544,11 @@ async function main(): Promise<void> {
   robot = await RobotScene.create(byId<HTMLCanvasElement>("robot"), `${BASE}/g1.glb`, sceneColors());
   renderTakes(index.map((entry) => entry.take));
   wireControls();
+  // A ?take= link opens that take. Otherwise open on the first take where the guard refused
+  // Nemotron's answer and a retry passed (take_0526 today), falling back to the first take.
   const asked = new URLSearchParams(location.search).get("take");
-  await selectTake(asked && takes.has(asked) ? asked : index[0]!.take, false);
+  const featured = index.find((entry) => guardCaught(takes.get(entry.take)!.grades.fusion)) ?? index[0]!;
+  await selectTake(asked && takes.has(asked) ? asked : featured.take, false);
   document.body.dataset.ready = "true";
   requestAnimationFrame(loop);
 }
