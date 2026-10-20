@@ -35,44 +35,67 @@
         <h2 class="call-line" id="call-line"></h2>
       </section>
 
-      <section class="stage" aria-label="Replay">
-        <figure class="pane pane-video">
-          <video id="video" muted playsinline loop preload="auto" aria-label="Phone recording of the take"></video>
-          <div id="missing-video" class="missing-video" hidden>
-            The phone recording is not part of this build. The robot replay and every grade below are.
-          </div>
-          <figcaption><span>Phone recording</span></figcaption>
-        </figure>
-        <figure class="pane pane-robot">
-          <canvas id="robot" aria-label="Simulated Unitree G1 replaying the take. Drag to turn the view."></canvas>
-          <figcaption>
-            <span class="long">Simulated G1. Ring under the robot turns orange while it is out of balance. Drag to turn.</span>
-            <span class="short">Simulated G1. Drag to turn.</span>
-          </figcaption>
-        </figure>
-      </section>
+      <div class="replay">
+        <section class="stage" aria-label="Replay">
+          <figure class="pane pane-video">
+            <video id="video" muted playsinline loop preload="auto" aria-label="Phone recording of the take"></video>
+            <div id="missing-video" class="missing-video" hidden>
+              The phone recording is not part of this build. The robot replay and every grade below are.
+            </div>
+            <figcaption><span>Phone recording</span></figcaption>
+          </figure>
+          <figure class="pane pane-robot">
+            <canvas id="robot" aria-label="Simulated Unitree G1 replaying the take. Drag to turn the view."></canvas>
+            <figcaption>
+              <span class="long">Simulated G1. Ring under the robot turns orange while it is out of balance. Drag to turn.</span>
+              <span class="short">Simulated G1. Drag to turn.</span>
+            </figcaption>
+          </figure>
+        </section>
 
-      <div class="transport">
-        <button class="play" id="play" type="button" aria-pressed="false">Play</button>
-        <p class="clock" id="clock" aria-live="off">0:00.0</p>
-        <div class="seek">
-          <div class="seek-track" id="seek-track" aria-hidden="true"></div>
-          <input
-            class="scrub"
-            id="scrub"
-            type="range"
-            min="0"
-            max="1"
-            step="0.0333"
-            value="0"
-            aria-label="Position in the take"
-            aria-describedby="call-line"
-          />
-        </div>
-        <div class="speeds" role="group" aria-label="Playback speed">
-          <button type="button" data-rate="0.25" aria-pressed="false">0.25x</button>
-          <button type="button" data-rate="0.5" aria-pressed="false">0.5x</button>
-          <button type="button" data-rate="1" aria-pressed="true">1x</button>
+        <aside class="runs" id="runs" aria-labelledby="runs-heading">
+          <h2 id="runs-heading">Where this take ran</h2>
+          <dl>
+            <div>
+              <dt>One local PC</dt>
+              <dd>WSL Ubuntu 24.04 on an NVIDIA GeForce RTX 2070 SUPER (8&nbsp;GiB)</dd>
+              <dd>GEM-X pose and retarget: <b id="run-gemx"></b></dd>
+              <dd>GEAR-SONIC replay in MuJoCo, whole process: <b id="run-replay"></b></dd>
+            </div>
+            <div>
+              <dt>Nebius AI Cloud Serverless Job</dt>
+              <dd>Cosmos Reason1 7B, model load: <b id="run-cosmos"></b></dd>
+            </div>
+            <div>
+              <dt>Nebius Token Factory</dt>
+              <dd>Nemotron 3.5 Super VL, <span id="run-supervl-count"></span>: <b id="run-supervl"></b></dd>
+              <dd>Nemotron 3.5 Lightning, the decision above</dd>
+            </div>
+          </dl>
+        </aside>
+
+        <div class="transport">
+          <button class="play" id="play" type="button" aria-pressed="false">Play</button>
+          <p class="clock" id="clock" aria-live="off">0:00.0</p>
+          <div class="seek">
+            <div class="seek-track" id="seek-track" aria-hidden="true"></div>
+            <input
+              class="scrub"
+              id="scrub"
+              type="range"
+              min="0"
+              max="1"
+              step="0.0333"
+              value="0"
+              aria-label="Position in the take"
+              aria-describedby="call-line"
+            />
+          </div>
+          <div class="speeds" role="group" aria-label="Playback speed">
+            <button type="button" data-rate="0.25" aria-pressed="false">0.25x</button>
+            <button type="button" data-rate="0.5" aria-pressed="false">0.5x</button>
+            <button type="button" data-rate="1" aria-pressed="true">1x</button>
+          </div>
         </div>
       </div>
 

@@ -1,9 +1,10 @@
 """Write the browser replay's per-take grades from the committed take results.
 
-Reads results/takes/<take>/{metrics.json, visual_summary.json, supervl_summary.json, fusion.json}
-and writes <web>/<take>/grades.json: one row per second with the deterministic grade, the Cosmos
-Reason1 verdict and the Nemotron Super VL verdict, plus every fusion attempt (the proposal Nemotron
-made and whether the guard passed or refused it) and the final decision.
+Reads results/takes/<take>/{metrics.json, visual_summary.json, supervl_summary.json, fusion.json,
+driver/stage_timings.json} and writes <web>/<take>/grades.json: one row per second with the
+deterministic grade, the Cosmos Reason1 verdict and the Nemotron Super VL verdict, plus every fusion
+attempt (the proposal Nemotron made and whether the guard passed or refused it), the final decision,
+and the recorded run times of each stage the page places.
 
   python tools/replay_grades.py --results results/takes --web web/public/replay
     --takes take_0525 take_0526 take_0527
@@ -75,6 +76,24 @@ def cutoffs(thresholds: dict[str, Any]) -> dict[str, float]:
     }
 
 
+def runtime(base: Path, cosmos: dict, supervl: dict) -> dict[str, float]:
+    """Recorded times for the parts the page says where they ran, copied without rounding.
+
+    GEM-X and the GEAR-SONIC replay ran locally (driver/stage_timings.json, written by
+    tools/wsl/run_take.sh). Cosmos Reason1's model load comes from its job's visual summary,
+    and Super VL's wall time and cost from its Token Factory summary.
+    """
+
+    stages = load(base / "driver" / "stage_timings.json")
+    return {
+        "gem_x_offline_s": stages["gem_x_offline_s"],
+        "replay_process_wall_s": stages["replay_process_wall_s"],
+        "cosmos_model_load_s": cosmos["timing"]["model_load_s"],
+        "supervl_wall_s": supervl["timing"]["wall_s"],
+        "supervl_cost_usd": supervl["cost_usd"],
+    }
+
+
 def grades(results: Path, take: str, thresholds: dict[str, Any]) -> dict:
     base = results / take
     metrics = load(base / "metrics.json")
@@ -129,6 +148,7 @@ def grades(results: Path, take: str, thresholds: dict[str, Any]) -> dict:
             ],
             "final": fusion["output"],
         },
+        "runtime": runtime(base, cosmos, supervl),
     }
 
 

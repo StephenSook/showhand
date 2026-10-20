@@ -195,6 +195,92 @@ h1 {
   letter-spacing: 0.005em;
 }
 
+/* Replay block: the stage, where it ran, and the transport. One column on narrow screens
+   (stage, transport, then where it ran); on wide ones "where it ran" stands beside the stage. */
+.replay {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.replay .stage {
+  order: 1;
+}
+
+.replay .transport {
+  order: 2;
+}
+
+.replay .runs {
+  order: 3;
+  margin-top: 10px;
+}
+
+@media (min-width: 1000px) {
+  .replay {
+    grid-template-columns: minmax(0, 1fr) 15.5rem;
+    column-gap: 10px;
+  }
+  .replay .stage {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .replay .runs {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .replay .transport {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+.runs {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 12px 14px 14px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.runs h2 {
+  font-size: 1.2rem;
+}
+
+.runs dl {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.runs dl > div {
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+}
+
+.runs dt {
+  font-weight: 600;
+}
+
+.runs dd {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+}
+
+.runs dd b {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+@media (min-width: 641px) and (max-width: 999px) {
+  .runs dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
 /* Stage: the phone video beside the robot, same height, same clock. */
 .stage {
   display: flex;

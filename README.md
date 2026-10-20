@@ -47,7 +47,7 @@ python -m venv .venv
 .venv\Scripts\python -m ruff check .
 ```
 
-GEM-X, GEAR-SONIC, and the MuJoCo simulation run inside WSL Ubuntu 24.04 using the environments installed under `/home/stephensookra/showhand/`. `NEBIUS_API_KEY` is read from the environment. No secret belongs in this repository.
+GEM-X, GEAR-SONIC, and the MuJoCo simulation run inside WSL Ubuntu 24.04 using the environments installed under `/home/stephensookra/showhand/`. The GEM-X and replay logs of all three of Stephen's takes (in the ignored `artifacts/runs/<take>/logs/` folder) show NVIDIA Warp finding one CUDA device there, an `NVIDIA GeForce RTX 2070 SUPER` with 8 GiB. Each take's stage times are in `results/takes/<take>/driver/stage_timings.json`. `NEBIUS_API_KEY` is read from the environment. No secret belongs in this repository.
 
 ## Pipeline commands
 

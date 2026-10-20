@@ -67,6 +67,24 @@ export interface Attempt {
   latency_s: number | null;
 }
 
+// Recorded run times, copied by tools/replay_grades.py from driver/stage_timings.json and the two
+// vision summaries. The page prints only these, never a time of its own.
+export interface Runtime {
+  gem_x_offline_s: number;
+  replay_process_wall_s: number;
+  cosmos_model_load_s: number;
+  supervl_wall_s: number;
+  supervl_cost_usd: number;
+}
+
+export const RUNTIME_FIELDS: (keyof Runtime)[] = [
+  "gem_x_offline_s",
+  "replay_process_wall_s",
+  "cosmos_model_load_s",
+  "supervl_wall_s",
+  "supervl_cost_usd",
+];
+
 export interface Grades {
   schema_version: 1;
   take: string;
@@ -83,6 +101,7 @@ export interface Grades {
     attempts: Attempt[];
     final: { decision: string; evidence_refs: string[]; reshow_windows: ReshowWindow[] };
   };
+  runtime: Runtime;
 }
 
 export interface TakeIndexEntry {
@@ -184,6 +203,12 @@ export function checkGrades(value: unknown, take: string): Grades {
     if (window.start_s < 0 || window.end_s > previousEnd + 1e-6 || window.end_s <= window.start_s) {
       fail(file, `re-show window ${window.start_s} to ${window.end_s} is outside the take`);
     }
+  }
+  const runtime = value.runtime;
+  if (!isRecord(runtime)) fail(file, "has no recorded run times");
+  for (const field of RUNTIME_FIELDS) {
+    const time = runtime[field];
+    if (!finite(time) || time < 0) fail(file, `runtime.${field} must be a recorded, non-negative number`);
   }
   return value as unknown as Grades;
 }

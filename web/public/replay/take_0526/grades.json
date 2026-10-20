@@ -294,5 +294,12 @@
     }
    ]
   }
+ },
+ "runtime": {
+  "gem_x_offline_s": 289.83551371,
+  "replay_process_wall_s": 24.926497182,
+  "cosmos_model_load_s": 282.210436766,
+  "supervl_wall_s": 9.728588,
+  "supervl_cost_usd": 0.0016191
  }
 }

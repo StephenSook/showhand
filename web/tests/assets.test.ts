@@ -94,6 +94,24 @@ describe("replay assets", () => {
         expect(grades.fusion.request_id).toBe(fusion.request_id);
       });
 
+      it("copies every run time the page prints from the take records, unrounded", () => {
+        const stages = record(take, "driver/stage_timings.json");
+        const cosmos = record(take, "visual_summary.json");
+        const supervl = record(take, "supervl_summary.json");
+        expect(grades.runtime).toEqual({
+          gem_x_offline_s: stages.gem_x_offline_s,
+          replay_process_wall_s: stages.replay_process_wall_s,
+          cosmos_model_load_s: cosmos.timing.model_load_s,
+          supervl_wall_s: supervl.timing.wall_s,
+          supervl_cost_usd: supervl.cost_usd,
+        });
+        const fusion = record(take, "fusion.json");
+        expect(grades.fusion.attempts.map((a) => a.latency_s)).toEqual(
+          fusion.attempts.map((a: { latency_s: number }) => a.latency_s),
+        );
+        expect(grades.fusion.cost_usd).toBe(fusion.cost_usd);
+      });
+
       it("weighs the two vision models the way the page says", () => {
         // Counted evidence: a measured limit or a Cosmos Reason1 no match. Super VL is not read.
         const counted = (row: (typeof grades.seconds)[number]) => !row.rules.pass || row.cosmos?.match === false;

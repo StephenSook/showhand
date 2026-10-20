@@ -99,6 +99,31 @@ test("the page states how the two vision models count, as the code weighs them",
   await expect(page.locator("#unsent")).toContainText("2 to 3 s also failed and is not in the list");
 });
 
+test("says beside the video where each stage ran, with that take's recorded times", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, "/?take=take_0525");
+  const runs = page.locator("#runs");
+  await expect(runs).toContainText("WSL Ubuntu 24.04 on an NVIDIA GeForce RTX 2070 SUPER (8 GiB)");
+  await expect(runs).toContainText("Nebius AI Cloud Serverless Job");
+  await expect(runs).toContainText("Nebius Token Factory");
+  // results/takes/take_0525: stage_timings.json, visual_summary.json, supervl_summary.json
+  await expect(page.locator("#run-gemx")).toHaveText("285.0 s");
+  await expect(page.locator("#run-replay")).toHaveText("25.6 s");
+  await expect(page.locator("#run-cosmos")).toHaveText("283.1 s");
+  await expect(page.locator("#run-supervl")).toHaveText("14.5 s, $0.00163");
+  await expect(page.locator("#run-supervl-count")).toHaveText("7 one-second checks");
+  // Beside the stage, inside the first 1440x900 screen.
+  const stage = (await page.locator(".stage").boundingBox())!;
+  const box = (await runs.boundingBox())!;
+  expect(Math.abs(box.y - stage.y)).toBeLessThan(2);
+  expect(box.x).toBeGreaterThan(stage.x + stage.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(900);
+
+  await page.getByRole("button", { name: /Take 0526/ }).click();
+  await expect(page.locator("#run-gemx")).toHaveText("289.8 s");
+  await expect(page.locator("#run-supervl-count")).toHaveText("7 one-second checks");
+});
+
 test("a cell click moves the clock and the detail card to that second", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: /Measured, 1 to 2 s: failed on worst joint error/ }).click();

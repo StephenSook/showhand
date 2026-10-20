@@ -22,7 +22,7 @@ Everything under `public/replay/` is generated from this repository's own record
 | --- | --- | --- |
 | `g1.glb` | `tools/replay_glb.py` | the G1 visual meshes, one node per kept geom, decimated to 10% |
 | `<take>/frames.bin`, `<take>/replay.json` | `tools/replay_glb.py` | `tools/wsl/export_replay.py`, which runs MuJoCo forward kinematics on the replay's logged joint states at the video's 30 fps |
-| `<take>/grades.json`, `index.json` | `tools/replay_grades.py` | `results/takes/<take>/` metrics, both visual summaries, `fusion.json`, and `config/thresholds.yaml` |
+| `<take>/grades.json`, `index.json` | `tools/replay_grades.py` | `results/takes/<take>/` metrics, both visual summaries, `fusion.json`, `driver/stage_timings.json`, and `config/thresholds.yaml` |
 
 ```sh
 # in WSL, with the GR00T simulation venv, once per take
@@ -37,7 +37,9 @@ python tools/replay_grades.py --results results/takes --web web/public/replay \
 
 `tests/assets.test.ts` fails if a re-export changes one file and not the others: frame hashes,
 GLB node names, per-second grades against `metrics.json`, fusion attempts against `fusion.json`,
-and frame counts against `replay_timing.json`.
+run times against `stage_timings.json` and the two visual summaries, and frame counts against
+`replay_timing.json`. The Python test `tests/test_replay_grades.py` fails if a committed
+`grades.json` differs from a fresh export.
 
 ## The phone recordings
 

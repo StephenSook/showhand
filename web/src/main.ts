@@ -302,6 +302,25 @@ function renderSeekRanges(t: Take): void {
   track.dataset.ranges = String(windows.length);
 }
 
+// ---- where each stage ran, with the times the take records hold ----
+function secondsText(value: number): string {
+  return `${value.toFixed(1)}${UNIT_SPACE}s`;
+}
+
+function usd(value: number): string {
+  return `$${value.toFixed(5)}`;
+}
+
+function renderRuns(t: Take): void {
+  const r = t.grades.runtime;
+  byId<HTMLElement>("run-gemx").textContent = secondsText(r.gem_x_offline_s);
+  byId<HTMLElement>("run-replay").textContent = secondsText(r.replay_process_wall_s);
+  byId<HTMLElement>("run-cosmos").textContent = secondsText(r.cosmos_model_load_s);
+  const checks = t.grades.seconds.filter((row) => row.supervl !== null).length;
+  byId<HTMLElement>("run-supervl-count").textContent = `${checks} one-second checks`;
+  byId<HTMLElement>("run-supervl").textContent = `${secondsText(r.supervl_wall_s)}, ${usd(r.supervl_cost_usd)}`;
+}
+
 // ---- detail panels ----
 function renderSecond(index: number): void {
   const g = take.grades;
@@ -406,7 +425,7 @@ function renderFusion(): void {
       `${g.models.fusion} reads the measured seconds and the Cosmos Reason1 verdicts, then proposes accept or the seconds to re-show. The guard refuses any second it sends back that is not a failing measured or Cosmos second it cited, and refuses accept while the whole take fails a measured limit or Cosmos marked any second as no match.`,
     ),
     steps,
-    el("p", { class: "fineprint" }, `Fusion cost $${g.fusion.cost_usd.toFixed(5)}. Request ${g.fusion.request_id}.`),
+    el("p", { class: "fineprint" }, `Fusion cost ${usd(g.fusion.cost_usd)}. Request ${g.fusion.request_id}.`),
   );
 }
 
@@ -453,6 +472,7 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   robot.bind(take);
   // The answer does not depend on the video, so it changes the moment the take does.
   renderCall(take);
+  renderRuns(take);
 
   const replaySeconds = replayDuration(take.replay.fps, take.replay.frames);
   const mine = ++selection;

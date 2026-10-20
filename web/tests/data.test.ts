@@ -63,6 +63,13 @@ function grades() {
       attempts: [],
       final: { decision: "reshow", evidence_refs: [], reshow_windows: [{ start_s: 0, end_s: 1, reason: "x" }] },
     },
+    runtime: {
+      gem_x_offline_s: 1,
+      replay_process_wall_s: 2,
+      cosmos_model_load_s: 3,
+      supervl_wall_s: 4,
+      supervl_cost_usd: 0.001,
+    } as Record<string, unknown>,
   };
 }
 
@@ -111,6 +118,13 @@ describe("checkGrades", () => {
     const g = grades();
     g.seconds[1]!.start_s = 1.2;
     expect(() => checkGrades(g, "take_0001")).toThrow(/does not continue/);
+  });
+  it("refuses a grades file without its recorded run times", () => {
+    const g = grades();
+    delete g.runtime.gem_x_offline_s;
+    expect(() => checkGrades(g, "take_0001")).toThrow(/runtime.gem_x_offline_s/);
+    const { runtime: _dropped, ...none } = grades();
+    expect(() => checkGrades(none, "take_0001")).toThrow(/no recorded run times/);
   });
   it("refuses a re-show window outside the take", () => {
     const g = grades();
