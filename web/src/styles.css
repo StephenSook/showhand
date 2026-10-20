@@ -447,6 +447,25 @@ h2 {
   border-top: 1px solid var(--rule);
 }
 
+/* How the two vision rows above are weighed, in the lanes' own track column. */
+.lane-note {
+  /* Above the playhead, so the line never runs through the sentence. */
+  position: relative;
+  z-index: 1;
+  background: var(--panel);
+  margin: 0;
+  padding: 5px 0 8px var(--label-w);
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--ink-2);
+  max-width: calc(var(--label-w) + 88ch);
+}
+
+.lane-note + .lane {
+  border-top: 1px solid var(--rule);
+}
+
 .lane-group {
   border-top: 2px solid var(--rule);
   margin-top: 6px;
@@ -838,6 +857,10 @@ footer p {
   }
   .lane-label {
     font-size: 0.74rem;
+  }
+  .lane-note {
+    padding-left: 0;
+    font-size: 0.76rem;
   }
   .long {
     display: none;

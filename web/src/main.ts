@@ -1,9 +1,21 @@
 import "./styles.css";
-import { loadIndex, loadTake, type Grades, type SecondRow, type Take, type Verdict } from "./data";
+import { loadIndex, loadTake, type Grades, type ReshowWindow, type SecondRow, type Take, type Verdict } from "./data";
 import { TimerClock, VideoClock, videoReady, type Clock } from "./clock";
 import { RobotScene, type SceneColors } from "./scene";
 import { UNIT_SPACE, frameAt, formatClock, replayDuration, sameWindows, secondAt, span, spans } from "./time";
-import { METRICS, callLine, decidedByText, limitText, reasonList, valueText, windowReason } from "./copy";
+import {
+  COSMOS_RULE,
+  METRICS,
+  SUPERVL_RULE,
+  callLine,
+  decidedByText,
+  limitText,
+  reasonList,
+  unsentFailingSeconds,
+  unsentSentence,
+  valueText,
+  windowReason,
+} from "./copy";
 
 const BASE = "/replay";
 
@@ -168,8 +180,9 @@ function renderTimeline(t: Take): void {
   const lanes: HTMLElement[] = [
     lane("Time", "Time", axis, "axis"),
     lane("Measured\nfrom the simulator", "Measured", rules),
-    lane("Cosmos Reason1\nvision check", "Cosmos", cosmos),
-    lane("Super VL\nvision check", "Super VL", supervl),
+    lane("Cosmos Reason1\nvision, counted", "Cosmos", cosmos),
+    lane("Super VL\nvision, not counted", "Super VL", supervl),
+    el("p", { class: "lane-note", id: "judge-rule" }, COSMOS_RULE, " ", SUPERVL_RULE),
     lane("Balance\nframe by frame", "Balance", balance),
   ];
 
@@ -311,14 +324,14 @@ function renderSecond(index: number): void {
       ),
     );
   }
-  const judge = (name: string, model: string, verdict: Verdict | null) => {
+  const judge = (name: string, model: string, verdict: Verdict | null, weight: string) => {
     const mark = verdictMark(verdict);
     const why = verdict && verdict.reason_codes.length ? ` on ${reasonList(verdict.reason_codes)}` : "";
     return el(
       "div",
       { class: "judge" },
       el("h3", {}, el("span", { class: `mark ${mark.cls === "none" ? "fail" : mark.cls}`, "aria-hidden": "true" }, mark.glyph), `${name}: ${mark.text}${why}`),
-      el("p", { class: "model" }, model),
+      el("p", { class: "model" }, `${model}. ${weight}`),
       el("p", { class: "quote" }, verdict?.summary ? `"${verdict.summary}"` : "No summary returned."),
     );
   };
@@ -339,8 +352,8 @@ function renderSecond(index: number): void {
       el("thead", {}, el("tr", {}, el("th", { scope: "col" }, "Measure"), el("th", { scope: "col" }, "This second"), el("th", { scope: "col" }, "Limit"), el("th", { scope: "col" }, "Result"))),
       body,
     ),
-    judge("Cosmos Reason1", g.models.cosmos, row.cosmos),
-    judge("Super VL", g.models.supervl, row.supervl),
+    judge("Cosmos Reason1", g.models.cosmos, row.cosmos, "Counted in the decision."),
+    judge("Super VL", g.models.supervl, row.supervl, "A second opinion, not counted in the decision."),
   );
 }
 
@@ -382,6 +395,7 @@ function renderFusion(): void {
       el("h3", {}, final.decision === "accept" ? "Decision: accept" : `Decision: re-show ${spans(final.reshow_windows)}`),
       el("p", {}, decidedByText(g.fusion.decided_by, g.fusion.status)),
       changed ? el("p", { class: "quote" }, "That is a different list from anything Nemotron proposed.") : "",
+      unsentText(g.seconds, final.reshow_windows),
     ),
   );
   panel.replaceChildren(
@@ -389,11 +403,16 @@ function renderFusion(): void {
     el(
       "p",
       { class: "status-line" },
-      `${g.models.fusion} reads the measured and visual evidence and proposes a decision. A guard checks that every second it sends back is backed by failing evidence, and that it never accepts a take the evidence fails.`,
+      `${g.models.fusion} reads the measured seconds and the Cosmos Reason1 verdicts, then proposes accept or the seconds to re-show. The guard refuses any second it sends back that is not a failing measured or Cosmos second it cited, and refuses accept while the whole take fails a measured limit or Cosmos marked any second as no match.`,
     ),
     steps,
     el("p", { class: "fineprint" }, `Fusion cost $${g.fusion.cost_usd.toFixed(5)}. Request ${g.fusion.request_id}.`),
   );
+}
+
+function unsentText(seconds: SecondRow[], windows: ReshowWindow[]): HTMLElement | string {
+  const sentence = unsentSentence(unsentFailingSeconds(seconds, windows));
+  return sentence ? el("p", { class: "quote", id: "unsent" }, sentence) : "";
 }
 
 // ---- playback ----

@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { checkFrames, checkGrades, checkIndex, checkReplay, type ReplayManifest } from "../src/data";
-import { callLine, limitText, METRICS, reasonLabel, reasonList, valueText, decidedByText, windowReason } from "../src/copy";
+import {
+  callLine,
+  decidedByText,
+  limitText,
+  METRICS,
+  reasonLabel,
+  reasonList,
+  unsentFailingSeconds,
+  unsentSentence,
+  valueText,
+  windowReason,
+} from "../src/copy";
 
 function replay(frames = 3, geoms = 2): ReplayManifest {
   return {
@@ -143,8 +154,25 @@ describe("copy", () => {
     expect(callLine({ decision: "accept", reshow_windows: [] })).toBe("Accepted. No second goes back.");
     expect(callLine({ decision: "reshow", reshow_windows: [] })).toMatch(/whole take/);
   });
+  it("lists failing seconds the decision left out, counting Cosmos but not Super VL", () => {
+    const g = grades();
+    const fail = { ...g.seconds[0]!.rules, pass: false, reason_codes: ["out_of_balance"] };
+    const noMatch = { match: false, status: "valid", reason_codes: ["orientation"], summary: "s" };
+    const rows = [
+      { start_s: 0, end_s: 1, rules: fail, cosmos: null, supervl: null },
+      { start_s: 1, end_s: 2, rules: g.seconds[0]!.rules, cosmos: noMatch, supervl: null },
+      { start_s: 2, end_s: 3, rules: g.seconds[0]!.rules, cosmos: null, supervl: noMatch },
+    ];
+    const left = unsentFailingSeconds(rows, [{ start_s: 0, end_s: 1, reason: "out_of_balance in cited evidence" }]);
+    expect(left.map((r) => r.start_s)).toEqual([1]);
+    expect(unsentSentence(left)).toMatch(/1 to 2.s also failed and is not in the list/);
+    expect(unsentSentence([])).toBe("");
+  });
   it("explains each fusion outcome the grader writes", () => {
     expect(decidedByText("deterministic_fallback", "fallback_after_guard_refusals")).toMatch(/fell back/);
+    // The fallback reads the measured seconds and the Cosmos verdicts only (src/showhand/fusion.py).
+    expect(decidedByText("deterministic_fallback", "fallback_after_guard_refusals")).toMatch(/Cosmos Reason1/);
+    expect(decidedByText("deterministic_fallback", "fallback_after_guard_refusals")).not.toMatch(/visual evidence/);
     expect(decidedByText("nemotron", "passed_after_retry")).toMatch(/retry/);
     expect(decidedByText("nemotron", "passed_first")).toMatch(/first answer/);
   });

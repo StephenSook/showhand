@@ -82,6 +82,23 @@ test("a phone's first screen carries the answer and each take's verdict", async 
   for (const tab of await page.locator(".take span").all()) await expect(tab).toBeVisible();
 });
 
+test("the page states how the two vision models count, as the code weighs them", async ({ page }) => {
+  await open(page, "/?take=take_0525");
+  // Super VL says no match on all 7 seconds here; only 2 go back, and the page says why.
+  await expect(page.locator("#timeline .cell[aria-label^='Nemotron Super VL'][aria-label$='no match']")).toHaveCount(7);
+  await expect(page.locator("#judge-rule")).toContainText("Cosmos Reason1 counts");
+  await expect(page.locator("#judge-rule")).toContainText("Super VL does not count");
+  await expect(page.locator("#fusion")).toContainText(
+    "every second that failed a measured limit or that Cosmos Reason1 marked as no match",
+  );
+  await expect(page.locator("#fusion")).not.toContainText("measured or visual evidence");
+  await expect(page.locator("#second")).toContainText("A second opinion, not counted in the decision.");
+  await expect(page.locator("#unsent")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Take 0526/ }).click();
+  await expect(page.locator("#unsent")).toContainText("2 to 3 s also failed and is not in the list");
+});
+
 test("a cell click moves the clock and the detail card to that second", async ({ page }) => {
   await open(page);
   await page.getByRole("button", { name: /Measured, 1 to 2 s: failed on worst joint error/ }).click();

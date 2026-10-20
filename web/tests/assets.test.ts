@@ -94,6 +94,20 @@ describe("replay assets", () => {
         expect(grades.fusion.request_id).toBe(fusion.request_id);
       });
 
+      it("weighs the two vision models the way the page says", () => {
+        // Counted evidence: a measured limit or a Cosmos Reason1 no match. Super VL is not read.
+        const counted = (row: (typeof grades.seconds)[number]) => !row.rules.pass || row.cosmos?.match === false;
+        for (const w of grades.fusion.final.reshow_windows) {
+          const row = grades.seconds.find((r) => r.start_s === w.start_s && r.end_s === w.end_s);
+          expect(row !== undefined && counted(row)).toBe(true);
+        }
+        if (grades.fusion.decided_by === "deterministic_fallback") {
+          expect(grades.fusion.final.reshow_windows.map((w) => w.start_s)).toEqual(
+            grades.seconds.filter(counted).map((r) => r.start_s),
+          );
+        }
+      });
+
       it("lines the replay up with the recorded take", () => {
         const timing = record(take, "replay_timing.json");
         expect(replay.frames).toBe(timing.source_frames);
