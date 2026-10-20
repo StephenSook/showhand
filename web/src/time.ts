@@ -42,8 +42,11 @@ export function seconds(value: number): string {
   return String(Number(value.toFixed(2)));
 }
 
+// A no-break space keeps the unit on the same line as its number, so "s." never wraps alone.
+export const UNIT_SPACE = " ";
+
 export function span(start: number, end: number): string {
-  return `${seconds(start)} to ${seconds(end)} s`;
+  return `${seconds(start)} to ${seconds(end)}${UNIT_SPACE}s`;
 }
 
 export function spans(windows: { start_s: number; end_s: number }[]): string {

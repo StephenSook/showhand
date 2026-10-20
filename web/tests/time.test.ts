@@ -42,18 +42,20 @@ describe("text", () => {
   it("prints times without trailing zeros", () => {
     expect(seconds(2)).toBe("2");
     expect(seconds(6.1)).toBe("6.1");
-    expect(span(1, 2)).toBe("1 to 2 s");
+    expect(span(1, 2)).toBe("1 to 2 s");
+    // The unit is glued to its number so a wrapped line never starts with "s."
+    expect(span(4, 5)).not.toMatch(/ s$/);
   });
   it("joins windows in reading order", () => {
     expect(spans([])).toBe("nothing");
-    expect(spans([{ start_s: 0, end_s: 1 }])).toBe("0 to 1 s");
+    expect(spans([{ start_s: 0, end_s: 1 }])).toBe("0 to 1 s");
     expect(
       spans([
         { start_s: 1, end_s: 2 },
         { start_s: 4, end_s: 5 },
         { start_s: 5, end_s: 6 },
       ]),
-    ).toBe("1 to 2 s, 4 to 5 s and 5 to 6 s");
+    ).toBe("1 to 2 s, 4 to 5 s and 5 to 6 s");
   });
   it("formats the clock", () => {
     expect(formatClock(0)).toBe("0:00.0");

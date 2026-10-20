@@ -2,7 +2,7 @@ import "./styles.css";
 import { loadIndex, loadTake, type Grades, type SecondRow, type Take, type Verdict } from "./data";
 import { TimerClock, VideoClock, videoReady, type Clock } from "./clock";
 import { RobotScene, type SceneColors } from "./scene";
-import { frameAt, formatClock, replayDuration, sameWindows, secondAt, span, spans } from "./time";
+import { UNIT_SPACE, frameAt, formatClock, replayDuration, sameWindows, secondAt, span, spans } from "./time";
 import { METRICS, decidedByText, limitText, reasonList, valueText } from "./copy";
 
 const BASE = "/replay";
@@ -301,7 +301,7 @@ function renderSecond(index: number): void {
   };
   const reshow = g.fusion.final.reshow_windows.some((w) => row.start_s < w.end_s && w.start_s < row.end_s);
   panel.replaceChildren(
-    el("h2", { id: "second-heading" }, `Second ${span(row.start_s, row.end_s).replace(" s", "")}`),
+    el("h2", { id: "second-heading" }, `Second ${span(row.start_s, row.end_s).replace(`${UNIT_SPACE}s`, "")}`),
     el(
       "p",
       { class: "status-line" },
