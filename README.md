@@ -27,7 +27,7 @@ These are engineering cutoffs, not measured findings. They must not be tuned aga
 
 ## Model choice
 
-The visual job is pinned to `nvidia/Cosmos-Reason1-7B`. Its Hugging Face model card lists the NVIDIA Open Model License, says the model accepts images and video, and says NVIDIA tested BF16 inference. The card reports H100, A100, and GB200 test hardware. NVIDIA's NIM support information gives a 24 GB BF16 memory requirement for the 7B model; one L40S GPU has 48 GB of GPU memory. The job runs on Nebius platform `gpu-l40s-a` with preset `1gpu-8vcpu-32gb` (one L40S, 8 vCPUs, 32 GB of host RAM; `tools/cosmos_job/submit.sh`), and it loaded the model in 282 to 283 s on each of Stephen's three takes (`results/takes/take_*/visual_summary.json`, `timing.model_load_s`). The code fails closed if the model does not load or if any window does not return the required object.
+The visual job is pinned to `nvidia/Cosmos-Reason1-7B`. Its Hugging Face model card lists the NVIDIA Open Model License, says the model accepts images and video, and says NVIDIA tested BF16 inference. The card reports H100, A100, and GB200 test hardware. NVIDIA's NIM support information gives a 24 GB BF16 memory requirement for the 7B model; one L40S GPU has 48 GB of GPU memory. The job runs as a Nebius AI Cloud Serverless Job on platform `gpu-l40s-a` with preset `1gpu-8vcpu-32gb` (one L40S, 8 vCPUs, 32 GB of host RAM; `tools/cosmos_job/submit.sh`), and it loaded the model in 282 to 283 s on each of Stephen's three takes (`results/takes/take_*/visual_summary.json`, `timing.model_load_s`). The code fails closed if the model does not load or if any window does not return the required object.
 
 Sources:
 
@@ -133,7 +133,7 @@ The first long GEM-X attempt was killed under the undocumented image-feature pat
 
 The long replay also exposed real WSL scheduling failures. Four attempts exceeded the unchanged 10 ms publish-jitter limit, at 0.032240 s on frame 710, 0.142612 s on frame 333, 0.044585 s on frame 18, and 0.010615 s on frame 199. A different attempt passed replay timing but was rejected because its telemetry contained a 0.342198 s gap against a 0.050000 s maximum. Another replay passed those gates but was withdrawn when the stronger receipt validator found that SONIC logged frames 5 through 880 instead of 0 through 880. The accepted run passed all validators after controller logs were moved to WSL-native storage, the bounded pacing margin was added, and the publisher warmup was introduced. These failed attempts are plumbing history, not additional takes.
 
-The visual verdicts, fusion outputs, and GPU costs are not reported here because no Serverless Job reached creation. The prior Nebius CLI credential expired at `2026-10-05T15:26:01Z`. A fresh no-browser authorization later timed out with `context deadline exceeded`, trace ID `d87414b7bf30576eb3a7b62a45f0fc39`. No model output has been substituted. Nebius GPU time and GPU cost are both zero.
+For these two plumbing clips, the visual verdicts, fusion outputs, and GPU costs are not reported because no Serverless Job reached creation for them. Stephen's takes below did run through the Nebius job. The prior Nebius CLI credential expired at `2026-10-05T15:26:01Z`. A fresh no-browser authorization later timed out with `context deadline exceeded`, trace ID `d87414b7bf30576eb3a7b62a45f0fc39`. No model output has been substituted. Nebius GPU time and GPU cost are both zero.
 
 ## Stephen's takes
 
