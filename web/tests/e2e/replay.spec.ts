@@ -144,6 +144,79 @@ test("says beside the video where each stage ran, with that take's recorded time
   await expect(page.locator("#run-supervl-count")).toHaveText("7 seconds checked");
 });
 
+test("a re-show button moves the replay there and leaves play or pause alone", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await open(page, "/?take=take_0525");
+  // results/takes/take_0525/fusion.json: tries took 0.897992 s and 0.806705 s, $0.00030144 in all.
+  await expect(page.locator("#call-cost")).toHaveText("Nemotron 3.5 Lightning: 0.90 s and 0.81 s, $0.00030");
+  const play = page.locator("#play");
+  if ((await play.textContent()) === "Pause") await play.click();
+  await expect(play).toHaveText("Play");
+
+  await page.locator(".call-seek", { hasText: "4 to 5" }).click();
+  await expect(page.locator("#clock")).toContainText("0:04.0");
+  await expect(page.locator("#second-heading")).toHaveText("Second 4 to 5");
+  await expect(play).toHaveText("Play");
+
+  await play.click();
+  await expect(play).toHaveText("Pause");
+  await page.locator(".call-seek", { hasText: "1 to 2" }).click();
+  const at = Number(await page.locator("#scrub").inputValue());
+  expect(at).toBeGreaterThanOrEqual(1);
+  expect(at).toBeLessThan(2.5);
+  await expect(play).toHaveText("Pause");
+});
+
+for (const reduced of [true, false]) {
+  test(`a re-show button brings a cut-off stage into view, ${reduced ? "without animation for reduced motion" : "smoothly"}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
+    // Chromium may finish either kind of scroll at once, so record what the page asked for.
+    await page.addInitScript(() => {
+      const calls: unknown[] = [];
+      (window as unknown as { __scrolls: unknown[] }).__scrolls = calls;
+      const original = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (this: Element, arg?: boolean | ScrollIntoViewOptions) {
+        calls.push(arg);
+        original.call(this, arg);
+      };
+    });
+    await open(page);
+    const before = (await page.locator(".stage").boundingBox())!;
+    expect(before.y + before.height).toBeGreaterThan(844);
+    await page.locator(".call-seek").first().click();
+    const scrolls = () => page.evaluate(() => (window as unknown as { __scrolls: unknown[] }).__scrolls);
+    await expect.poll(scrolls).toContainEqual({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
+    expect(await scrolls()).not.toContainEqual({ behavior: reduced ? "smooth" : "auto", block: "nearest" });
+    await expect
+      .poll(async () => {
+        const b = (await page.locator(".stage").boundingBox())!;
+        return b.y >= 0 && b.y + b.height <= 844;
+      })
+      .toBe(true);
+    if (reduced) {
+      // Reduced motion also means no autoplay, and the button does not start playback.
+      await expect(page.locator("#clock")).toContainText("0:00.0");
+      await expect(page.locator("#play")).toHaveText("Play");
+    }
+  });
+}
+
+test("links a favicon that loads, and nothing on the page answers with an error", async ({ page, request }) => {
+  const failed: string[] = [];
+  page.on("response", (response) => {
+    // Without the clips (CI), the page asks for the phone recording and falls back to a timer.
+    const missingClip = !clipsPresent && response.url().endsWith("/source.mp4");
+    if (response.status() >= 400 && !missingClip) failed.push(`${response.status()} ${response.url()}`);
+  });
+  await open(page);
+  const href = await page.locator("link[rel=icon]").getAttribute("href");
+  const icon = await request.get(href!);
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()["content-type"]).toContain("image/svg+xml");
+  expect(failed).toEqual([]);
+});
+
 test("a cell click moves the clock and the detail card to that second", async ({ page }) => {
   await open(page, "/?take=take_0525");
   await page.getByRole("button", { name: /Measured, 1 to 2 s: failed on worst joint error/ }).click();

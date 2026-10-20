@@ -2,7 +2,7 @@
 // underscores turned into spaces) so a new code from the grader never disappears from the page.
 
 import type { Attempt, Grades, ReshowWindow, RuleRow, SecondRow } from "./data";
-import { span, spans } from "./time";
+import { UNIT_SPACE, span, spans } from "./time";
 
 const REASONS: Record<string, string> = {
   tracking_mean_abs_error_rad: "mean joint error",
@@ -70,16 +70,36 @@ export function windowReason(reason: string): string {
 }
 
 // The one-line answer above the video: which seconds go back, and why, from the final decision.
-export function callLine(final: { decision: string; reshow_windows: ReshowWindow[] }): string {
-  if (final.decision === "accept") return "Accepted. No second goes back.";
+// As parts, so the page can make each window's seconds a button; callLine is the same text.
+export type CallPart = string | ReshowWindow;
+
+export function callParts(final: { decision: string; reshow_windows: ReshowWindow[] }): CallPart[] {
+  if (final.decision === "accept") return ["Accepted. No second goes back."];
   const windows = final.reshow_windows;
-  if (windows.length === 0) return "Re-show the whole take. No single second failed on its own.";
-  if (windows.length === 1) {
-    const w = windows[0]!;
-    return `Re-show ${span(w.start_s, w.end_s)}: ${windowReason(w.reason)}`;
-  }
-  const parts = windows.map((w) => `${span(w.start_s, w.end_s)} (${windowReason(w.reason)})`);
-  return `Re-show ${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  if (windows.length === 0) return ["Re-show the whole take. No single second failed on its own."];
+  if (windows.length === 1) return ["Re-show ", windows[0]!, `: ${windowReason(windows[0]!.reason)}`];
+  const parts: CallPart[] = ["Re-show "];
+  windows.forEach((w, i) => {
+    if (i > 0) parts.push(i === windows.length - 1 ? " and " : ", ");
+    parts.push(w, ` (${windowReason(w.reason)})`);
+  });
+  return parts;
+}
+
+export function callLine(final: { decision: string; reshow_windows: ReshowWindow[] }): string {
+  return callParts(final)
+    .map((part) => (typeof part === "string" ? part : span(part.start_s, part.end_s)))
+    .join("");
+}
+
+// The fusion call's own time and cost, from the attempts and cost in fusion.json.
+export function fusionCostLine(fusion: Pick<Grades["fusion"], "attempts" | "cost_usd">): string {
+  const times = fusion.attempts
+    .map((a) => a.latency_s)
+    .filter((t): t is number => t !== null)
+    .map((t) => `${t.toFixed(2)}${UNIT_SPACE}s`);
+  const timing = times.length ? `${times.length === 2 ? times.join(" and ") : times.join(", ")}, ` : "";
+  return `Nemotron 3.5 Lightning: ${timing}$${fusion.cost_usd.toFixed(5)}`;
 }
 
 // How the two vision models are weighed, as src/showhand/fusion.py and guard.py do it. Fusion

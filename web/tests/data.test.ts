@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { checkFrames, checkGrades, checkIndex, checkReplay, type ReplayManifest } from "../src/data";
 import {
   callLine,
+  callParts,
   catchLine,
   decidedByText,
+  fusionCostLine,
   guardCaught,
   limitText,
   METRICS,
@@ -183,6 +185,27 @@ describe("copy", () => {
     expect(left.map((r) => r.start_s)).toEqual([1]);
     expect(unsentSentence(left)).toMatch(/1 to 2.s also failed and is not in the list/);
     expect(unsentSentence([])).toBe("");
+  });
+  it("splits the answer so each window's seconds can be a button, with the same text", () => {
+    const final = {
+      decision: "reshow",
+      reshow_windows: [
+        { start_s: 1, end_s: 2, reason: "tracking_p95_abs_error_rad in cited evidence" },
+        { start_s: 4, end_s: 5, reason: "upper_body_pose in cited evidence" },
+      ],
+    };
+    const parts = callParts(final);
+    expect(parts.filter((p) => typeof p !== "string")).toEqual(final.reshow_windows);
+    expect(callLine(final)).toBe("Re-show 1 to 2 s (worst joint error) and 4 to 5 s (upper body pose)");
+  });
+  it("prints the fusion call's time and cost from the record", () => {
+    const attempt = { attempt: 1, guard: "refused", guard_error: null, proposal: null, latency_s: 0.897992 };
+    expect(
+      fusionCostLine({ attempts: [attempt, { ...attempt, attempt: 2, latency_s: 0.806705 }], cost_usd: 0.00030144 }),
+    ).toBe("Nemotron 3.5 Lightning: 0.90 s and 0.81 s, $0.00030");
+    expect(fusionCostLine({ attempts: [{ ...attempt, latency_s: null }], cost_usd: 0.0001 })).toBe(
+      "Nemotron 3.5 Lightning: $0.00010",
+    );
   });
   it("says in one sentence what the guard did with Nemotron's answers", () => {
     const accept = { decision: "accept", reshow_windows: [] };

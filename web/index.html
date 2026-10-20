@@ -8,6 +8,7 @@
       name="description"
       content="Three recorded takes beside a simulated Unitree G1 replaying them, with every second Showhand measured, what two vision models said, and the seconds it sent back to re-show."
     />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,7 +34,11 @@
 
       <section class="call" id="call" aria-labelledby="call-line">
         <h2 class="call-line" id="call-line"></h2>
-        <p class="call-catch" id="call-catch"></p>
+        <div class="call-meta">
+          <p class="call-catch" id="call-catch"></p>
+          <p class="call-cost" id="call-cost"></p>
+        </div>
+        <span class="visually-hidden" id="seek-hint">Moves the recording and the robot to the start of those seconds.</span>
       </section>
 
       <div class="replay">

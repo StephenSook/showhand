@@ -7,9 +7,10 @@ import {
   COSMOS_RULE,
   METRICS,
   SUPERVL_RULE,
-  callLine,
+  callParts,
   catchLine,
   decidedByText,
+  fusionCostLine,
   guardCaught,
   limitText,
   reasonList,
@@ -283,11 +284,44 @@ function overallText(g: Grades): string {
 
 // ---- the answer above the video, and the same seconds on the seek bar ----
 function renderCall(t: Take): void {
-  byId<HTMLElement>("call-line").textContent = callLine(t.grades.fusion.final);
+  byId<HTMLElement>("call-line").replaceChildren(
+    ...callParts(t.grades.fusion.final).map((part) => {
+      if (typeof part === "string") return part;
+      const button = el(
+        "button",
+        {
+          class: "call-seek",
+          type: "button",
+          "aria-describedby": "seek-hint",
+          "data-start": String(part.start_s),
+        },
+        span(part.start_s, part.end_s),
+      );
+      button.addEventListener("click", () => showSeconds(part.start_s));
+      return button;
+    }),
+  );
   const caught = catchLine(t.grades.fusion);
   const line = byId<HTMLElement>("call-catch");
   line.textContent = caught;
   line.hidden = caught === "";
+  byId<HTMLElement>("call-cost").textContent = fusionCostLine(t.grades.fusion);
+}
+
+// A re-show button moves the recording and the robot to that second. It leaves play or pause as
+// it was. If the stage is partly off screen it scrolls into view, without animation when the
+// viewer asked for reduced motion.
+function showSeconds(start: number): void {
+  // Until the take's clock exists (its video is still loading) there is nothing to move.
+  if (document.body.dataset.take !== take.id) return;
+  clock.seek(start + 0.001);
+  tick(true);
+  const stage = document.querySelector<HTMLElement>(".stage")!;
+  const box = stage.getBoundingClientRect();
+  if (box.top < 0 || box.bottom > window.innerHeight) {
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    stage.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  }
 }
 
 function renderSeekRanges(t: Take): void {

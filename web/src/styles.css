@@ -119,7 +119,7 @@ h1 {
 @media (min-width: 1000px) {
   :root {
     /* Short enough that the band, the stage and the seek bar all fit a 900 px tall window. */
-    --stage-h: min(53vh, 620px);
+    --stage-h: min(51vh, 620px);
   }
   .masthead {
     grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
@@ -195,16 +195,68 @@ h1 {
   letter-spacing: 0.005em;
 }
 
-.call-catch {
-  margin: 4px 0 0;
-  max-width: 96ch;
-  font-size: 0.92rem;
+/* Each window's seconds in the answer is a button that moves the replay there. */
+.call-seek {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.14em;
+}
+
+.call-seek:hover {
+  background: color-mix(in srgb, var(--paper) 16%, transparent);
+  box-shadow: 0 0 0 0.1em color-mix(in srgb, var(--paper) 16%, transparent);
+}
+
+.call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 18px;
+  margin-top: 4px;
+}
+
+.call-catch,
+.call-cost {
+  margin: 0;
   line-height: 1.4;
   color: color-mix(in srgb, var(--paper) 84%, var(--ink));
 }
 
+.call-catch {
+  flex: 1 1 32rem;
+  max-width: 96ch;
+  font-size: 0.92rem;
+}
+
 .call-catch[hidden] {
   display: none;
+}
+
+.call-cost {
+  flex: 0 1 auto;
+  font-size: 0.8rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Replay block: the stage, where it ran, and the transport. One column on narrow screens
