@@ -53,7 +53,7 @@ The joint-name count is the length of the tuple, not a finding about a take. The
 
 `config/residual_prereg.yaml` fixes the comparison before outside human grades exist. `sha256sum` of the worktree file printed `b0a7d011f4d790ac34ce38426ea59e329f24f659e812282c8b2b2ac5d49bd8d5`. The file's own history is three commits: `1092140` added the harness, `29f88b17e65c072fd7d244cb2bf22fc53eb31d17` (2026-10-05 15:41:31 -0400) defined bootstrap handling, and `9fb9c782af1010a6c414c534386d19fa7e4d226d` (2026-10-05 23:55:50 -0400) recorded the retry amendment. That local timestamp is 2026-10-06 03:55:50 UTC. The amendment date inside the file is `2026-10-06`.
 
-The harness has no real-label result. `synthetic_data_policy` says unit tests only, and the literal status is still waiting for real takes and human grades. The committed fusion records confirm that the first answers for `take_0526` and `take_0527` were accepts that contradicted failing evidence. The first `take_0525` answer was refused for citing a window without matching negative evidence.
+The pre-registration file is unchanged (same SHA-256 as above); its literal status still reads waiting, because results live in `results/residual/`, not in the frozen file. The first real labels arrived on 2026-10-21: one outside grader kept all three of Stephen's takes. `tools/residual_report.py` gives `evaluation_invalid` (tracking-only kappa undefined), fused agreement 0 of 3, tracking-only agreement 3 of 3. `synthetic_data_policy` still says unit tests only. The committed fusion records confirm that the first answers for `take_0526` and `take_0527` were accepts that contradicted failing evidence. The first `take_0525` answer was refused for citing a window without matching negative evidence.
 
 | Claim | Value | Source | Tag |
 | --- | --- | --- | --- |
@@ -438,10 +438,10 @@ The hosted GitHub Actions run for this SHA was not queried.
 
 ## Do not claim
 
-- Do not claim an outside person has graded a take. No committed human labels exist. The pre-registration status is still waiting.
-- Do not claim the visual judge or the fused decision agrees with a human grader. That comparison has no result.
+- Do not claim more than one outside person has graded, or more than three takes. Do not name the grader.
+- Do not claim the visual judge or the fused decision agrees with a human grader. On the three graded takes the fused decision disagreed every time, and the pre-registered primary result is `evaluation_invalid`.
 - Do not claim a real Unitree robot ran. The path in this repo is a MuJoCo simulation.
-- Do not claim that the measured replay and fusion results on Stephen's takes establish product accuracy or value. No outside human comparison exists.
+- Do not claim that the measured replay and fusion results on Stephen's takes establish product accuracy or value. The only outside human comparison is n = 3 and invalid by the pre-registered rule.
 - Do not claim Cosmos or Nemotron graded the two Pexels clips. Both records are blocked before job creation. GPU time and GPU cost on those records are zero.
 - Do not claim Nebius visual job ids, job states, GPU type, GPU seconds, job wall times, price source, or GPU cost for Stephen's takes. The visual verdict counts, mismatch fields, model-load times, and later fusion records are MEASURED from the accepted summaries and records.
 - Do not claim the about 0.38 USD figure is a bill. The README calls it a price-list estimate, and the price list is not in the repo.

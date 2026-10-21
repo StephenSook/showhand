@@ -4,7 +4,7 @@ Showhand grades recorded takes of one in-place human move. It does not turn a vi
 
 **Watch the three graded takes: <https://showhand-replay.vercel.app>.** Each phone recording plays beside the simulated G1 that replayed it, with every measured second, both vision verdicts, every Nemotron answer the guard refused or passed, and the seconds sent back. No physical robot was used. The page is built from this repository's committed take records ([`web/`](web/README.md)).
 
-Phase 1 used two licensed Pexels clips only to test the plumbing. Those results are labeled `PLUMBING TEST`. Stephen then recorded three takes of his own on a phone, and they ran through the same pipeline. Neither set is evidence that Showhand agrees with a human grader or improves robot teaching, because no outside grader has labeled a take yet.
+Phase 1 used two licensed Pexels clips only to test the plumbing. Those results are labeled `PLUMBING TEST`. Stephen then recorded three takes of his own on a phone, and they ran through the same pipeline. Neither set is evidence that Showhand agrees with a human grader or improves robot teaching. One outside grader has since labeled Stephen's three takes, and disagreed with Showhand on all three (see [Residual evaluation](#residual-evaluation)).
 
 ## Ownership and credit
 
@@ -206,12 +206,18 @@ The private frames were sent only to Nebius Token Factory, whose inference servi
 
 `config/residual_prereg.yaml` fixes the comparison before real labels exist. The primary result will be the paired difference between fused-judge and tracking-only Cohen kappa against outside human binary grades, with a whole-take paired percentile bootstrap and 10,000 replicates. The harness also reports agreement rates and confusion matrices.
 
-The only current residual inputs are synthetic unit-test rows. Their numbers are intentionally not reported as results.
+**The first outside grades.** On 2026-10-21 an outside robotics builder, shown each emailed clip (the phone take beside the simulated G1) and asked for keep or redo, kept all three: [`results/residual/human_grades.json`](results/residual/human_grades.json). `python tools/residual_report.py` applies the pre-registration and writes [`results/residual/report.json`](results/residual/report.json):
+
+| Judge | Agrees with the human | Confusion |
+|---|---|---|
+| Fused judge (Showhand's decision) | 0 of 3 | human kept 3, judge re-showed 3 |
+| Tracking error alone (the baseline) | 3 of 3 | human kept 3, judge kept 3 |
+
+The primary result is `evaluation_invalid`, which is what `observed_undefined_kappa` says to do: the human and the tracking-only judge gave every take the same grade, so that judge's Cohen kappa is undefined (the fused judge's is 0). Read plainly: on these three takes a human watching the clip let all of them through, and so did tracking error, while Showhand sent seconds back on every one, for balance (0.53 to 1.28 s out of balance against 0.5 s), foot slip, a 1.411 rad joint-error peak and Cosmos pose mismatches. Three takes from one grader say nothing about which is right for training data, and nothing here was tuned after the grades arrived. The synthetic unit-test rows are still never reported as results.
 
 ## Not done
 
-- An outside grader has not supplied human accept or re-show labels.
-- The pre-registered residual comparison therefore has no result.
+- One outside grader on three takes. The pre-registered comparison needs takes the human and both judges do not all grade alike before it has a valid result.
 - The stock Pexels clips cannot establish product accuracy or value.
 - The two Pexels plumbing clips have no visual verdicts; the jobs above covered Stephen's takes only.
 - The historical take records for Stephen's takes still list the visual judge as blocked. The committed `final_state.json` files point to the later visual and fusion outcomes without asserting unsupported job ids.
