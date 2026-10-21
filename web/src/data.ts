@@ -110,6 +110,31 @@ export interface TakeIndexEntry {
   decision: string;
 }
 
+// residual.json is results/residual/report.json, copied unchanged by tools/replay_grades.py: one
+// outside human grade per take, Showhand's fused decision and the tracking-only decision on the
+// same take, and the pre-registered comparison over all of them.
+export type Grade = "accept" | "reshow";
+
+export interface ResidualLabel {
+  take_id: string;
+  human: Grade;
+  fused_judge: Grade;
+  tracking_alone: Grade;
+}
+
+export interface Residual {
+  schema_version: 1;
+  label_source: "human";
+  n: number;
+  fused_agreement: number;
+  tracking_agreement: number;
+  fused_kappa: number | null;
+  tracking_kappa: number | null;
+  status: string;
+  why: string | null;
+  labels: ResidualLabel[];
+}
+
 export interface Take {
   id: string;
   label: string;
@@ -226,6 +251,67 @@ export function checkFrames(buffer: ArrayBuffer, replay: ReplayManifest): Float3
   return frames;
 }
 
+const GRADES: readonly string[] = ["accept", "reshow"];
+
+function grade(value: unknown): value is Grade {
+  return typeof value === "string" && GRADES.includes(value);
+}
+
+function kappa(value: unknown): value is number | null {
+  return value === null || finite(value);
+}
+
+// Refuses a report the page would misstate: labels that did not come from a human (the
+// pre-registration forbids reporting synthetic ones), a grade that is not accept or re-show, a take
+// graded twice, or a count or agreement rate the labels do not reproduce.
+export function checkResidual(value: unknown): Residual {
+  const file = "residual.json";
+  if (!isRecord(value) || value.schema_version !== 1) fail(file, "expected schema_version 1");
+  if (value.label_source !== "human") fail(file, `label_source is ${String(value.label_source)}, not human`);
+  if (typeof value.status !== "string" || value.status === "") fail(file, "has no status");
+  if (value.why !== undefined && value.why !== null && typeof value.why !== "string") fail(file, "why must be text");
+  if (!kappa(value.fused_kappa) || !kappa(value.tracking_kappa)) fail(file, "a kappa must be a number or null");
+  const labels = value.labels;
+  if (!Array.isArray(labels) || labels.length === 0) fail(file, "has no per-take labels");
+  const seen = new Set<string>();
+  for (const [i, label] of labels.entries()) {
+    if (!isRecord(label) || typeof label.take_id !== "string" || !/^take_\d+$/.test(label.take_id)) {
+      fail(file, `label ${i} has no take id`);
+    }
+    if (seen.has(label.take_id)) fail(file, `${label.take_id} is graded twice`);
+    seen.add(label.take_id);
+    for (const field of ["human", "fused_judge", "tracking_alone"] as const) {
+      if (!grade(label[field])) fail(file, `${label.take_id} ${field} is ${String(label[field])}, not accept or reshow`);
+    }
+  }
+  const rows = labels as ResidualLabel[];
+  if (value.n !== rows.length) fail(file, `n is ${String(value.n)} for ${rows.length} labels`);
+  for (const [field, judge] of [
+    ["fused_agreement", "fused_judge"],
+    ["tracking_agreement", "tracking_alone"],
+  ] as const) {
+    const rate = rows.filter((row) => row[judge] === row.human).length / rows.length;
+    const stated = value[field];
+    if (!finite(stated) || Math.abs(stated - rate) > 1e-6) {
+      fail(file, `${field} is ${String(stated)}, but the labels give ${rate}`);
+    }
+  }
+  return { ...(value as unknown as Residual), why: typeof value.why === "string" ? value.why : null };
+}
+
+// The page prints Showhand's decision twice for a graded take: in the answer above the video (from
+// grades.json) and beside the outside grade (from residual.json). They must be the same decision.
+export function checkResidualAgainstTakes(residual: Residual, takes: Map<string, Pick<Take, "grades">>): void {
+  for (const label of residual.labels) {
+    const take = takes.get(label.take_id);
+    if (!take) continue;
+    const decision = take.grades.fusion.final.decision;
+    if (decision !== label.fused_judge) {
+      fail("residual.json", `${label.take_id} fused_judge is ${label.fused_judge}, but grades.json decided ${decision}`);
+    }
+  }
+}
+
 export function outOfBalanceFlags(replay: ReplayManifest): Uint8Array {
   return Uint8Array.from(replay.frame_times, (row) => (row.out_of_balance === "1" ? 1 : 0));
 }
@@ -240,6 +326,10 @@ async function fetchOk(fetcher: Fetcher, url: string): Promise<Response> {
 
 export async function loadIndex(base: string, fetcher: Fetcher): Promise<TakeIndexEntry[]> {
   return checkIndex(await (await fetchOk(fetcher, `${base}/index.json`)).json());
+}
+
+export async function loadResidual(base: string, fetcher: Fetcher): Promise<Residual> {
+  return checkResidual(await (await fetchOk(fetcher, `${base}/residual.json`)).json());
 }
 
 export async function loadTake(base: string, entry: TakeIndexEntry, fetcher: Fetcher): Promise<Take> {

@@ -38,6 +38,10 @@
           <p class="call-catch" id="call-catch"></p>
           <p class="call-cost" id="call-cost"></p>
         </div>
+        <div class="outside" id="outside" role="group" aria-label="This take against an outside grader" hidden>
+          <dl id="outside-grades"></dl>
+          <a class="outside-link" href="#residual">About this check</a>
+        </div>
         <span class="visually-hidden" id="seek-hint">Moves the recording and the robot to the start of those seconds.</span>
       </section>
 
@@ -104,6 +108,16 @@
           </div>
         </div>
       </div>
+
+      <section class="residual" id="residual" aria-labelledby="residual-heading" hidden>
+        <h2 id="residual-heading">Checked against an outside grader</h2>
+        <p id="residual-counts"></p>
+        <p id="residual-verdict"></p>
+        <p class="residual-links">
+          <a href="https://github.com/StephenSook/showhand#residual-evaluation">Residual evaluation in the README</a>
+          <a href="https://github.com/StephenSook/showhand/blob/main/results/residual/report.json">results/residual/report.json</a>
+        </p>
+      </section>
 
       <div class="section-head">
         <h2 id="timeline-heading">Every second, every judge</h2>

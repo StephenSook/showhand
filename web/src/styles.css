@@ -118,8 +118,9 @@ h1 {
 
 @media (min-width: 1000px) {
   :root {
-    /* Short enough that the band, the stage and the seek bar all fit a 900 px tall window. */
-    --stage-h: min(51vh, 620px);
+    /* Short enough that the band (with its outside-grade row), the stage and the seek bar all fit
+       a 900 px tall window, even where the band's second line wraps. */
+    --stage-h: min(48vh, 620px);
   }
   .masthead {
     grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
@@ -245,6 +246,62 @@ h1 {
 .call-cost {
   flex: 0 1 auto;
   font-size: 0.8rem;
+}
+
+/* An outside grader's grade for this take, under the answer: their grade, then Showhand's decision
+   and the tracking-only decision, each with a mark and a word for whether it matches. */
+.outside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 18px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--paper) 24%, transparent);
+  font-size: 0.85rem;
+  /* Whole pixels, so the stage under the band starts on a whole pixel and a scroll that brings
+     it into view lands its edge exactly on the window's. */
+  line-height: 20px;
+}
+
+.outside[hidden] {
+  display: none;
+}
+
+.outside dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 22px;
+  margin: 0;
+}
+
+.outside dl > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.outside dt {
+  color: color-mix(in srgb, var(--paper) 74%, var(--ink));
+}
+
+.outside dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.outside .agree {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.outside .mark {
+  margin: 0 5px 0 2px;
+}
+
+.outside-link {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--paper) 84%, var(--ink));
 }
 
 .visually-hidden {
@@ -554,6 +611,40 @@ h1 {
 .speeds button[aria-pressed="true"] {
   background: var(--ink);
   color: var(--paper);
+}
+
+/* Once for the page: how each judge did against the outside grader, and the pre-registered result. */
+.residual {
+  margin: 22px 0 0;
+  padding: 14px 18px 16px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.residual h2 {
+  font-size: 1.45rem;
+}
+
+.residual p {
+  margin: 6px 0 0;
+  max-width: 92ch;
+}
+
+#residual-verdict {
+  color: var(--ink-2);
+}
+
+.residual code {
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.residual-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 0.88rem;
 }
 
 /* Timeline */
@@ -1011,6 +1102,29 @@ footer p {
   .lane-note {
     padding-left: 0;
     font-size: 0.76rem;
+  }
+  /* Three short columns, each judge's label over its grade. */
+  .outside dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px 10px;
+    width: 100%;
+  }
+  .outside dl > div {
+    display: block;
+  }
+  .outside dt {
+    font-size: 0.74rem;
+    line-height: 16px;
+  }
+  .outside .agree {
+    display: block;
+  }
+  .outside-link {
+    margin-left: 0;
+  }
+  .residual {
+    padding: 12px 14px 14px;
   }
   .long {
     display: none;

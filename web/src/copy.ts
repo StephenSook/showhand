@@ -1,7 +1,7 @@
 // Plain-language names for the codes in grades.json. An unknown code still prints (with its
 // underscores turned into spaces) so a new code from the grader never disappears from the page.
 
-import type { Attempt, Grades, ReshowWindow, RuleRow, SecondRow } from "./data";
+import type { Attempt, Grade, Grades, Residual, ReshowWindow, RuleRow, SecondRow } from "./data";
 import { UNIT_SPACE, span, spans } from "./time";
 
 const REASONS: Record<string, string> = {
@@ -158,6 +158,90 @@ export function catchLine(fusion: FusionRecord): string {
   }
   if (first.guard === "passed") return "The guard passed Nemotron's first answer.";
   return "";
+}
+
+// ---- the outside human grade, from residual.json (results/residual/report.json) ----
+
+export function gradeWord(grade: Grade): string {
+  return grade === "accept" ? "Accept" : "Re-show";
+}
+
+export interface OutsideJudge {
+  judge: "fused" | "tracking";
+  grade: Grade;
+  agrees: boolean;
+}
+
+export interface OutsideView {
+  grader: Grade;
+  judges: OutsideJudge[];
+}
+
+// One take against the outside grader: their grade, then Showhand's decision and the tracking-only
+// decision, each with whether it matches. Null for a take the grader did not grade.
+export function outsideView(residual: Residual, takeId: string): OutsideView | null {
+  const label = residual.labels.find((row) => row.take_id === takeId);
+  if (!label) return null;
+  return {
+    grader: label.human,
+    judges: [
+      { judge: "fused", grade: label.fused_judge, agrees: label.fused_judge === label.human },
+      { judge: "tracking", grade: label.tracking_alone, agrees: label.tracking_alone === label.human },
+    ],
+  };
+}
+
+// Text with the report's own status word set apart, so the page can print it as code.
+export type ReportPart = string | { code: string };
+
+const JUDGE_NAMES = { fused: "Showhand's decision", tracking: "tracking error alone" } as const;
+
+function graded(grade: Grade): string {
+  return grade === "accept" ? "accepted" : "sent back";
+}
+
+// Why a judge's kappa is undefined, read off the labels: kappa has no value when the grader and
+// that judge each gave every take one and the same grade. Null when the labels do not show that.
+function sameEverywhere(residual: Residual, field: "fused_judge" | "tracking_alone"): Grade | null {
+  const first = residual.labels[0]!.human;
+  return residual.labels.every((row) => row.human === first && row[field] === first) ? first : null;
+}
+
+// The agreement counts and the pre-registered result in two sentences, each built from the report.
+export function residualSentences(residual: Residual): [string, ReportPart[]] {
+  const n = residual.labels.length;
+  const matched = (field: "fused_judge" | "tracking_alone") =>
+    residual.labels.filter((row) => row[field] === row.human).length;
+  const counts = `Showhand's decision matched an outside grader on ${matched("fused_judge")} of ${n} ${
+    n === 1 ? "take" : "takes"
+  }, and tracking error alone matched on ${matched("tracking_alone")} of ${n}.`;
+  const lead = "The comparison was pre-registered before any grade arrived, and under its own rule the result is ";
+  if (residual.status !== "evaluation_invalid") {
+    return [counts, [lead, { code: residual.status }, "."]];
+  }
+  const undefinedJudges = (
+    [
+      ["fused", "fused_judge", residual.fused_kappa],
+      ["tracking", "tracking_alone", residual.tracking_kappa],
+    ] as const
+  ).filter(([, , value]) => value === null);
+  const reasons = undefinedJudges.map(([judge, field]) => {
+    const grade = sameEverywhere(residual, field);
+    return grade === null ? null : `the grader and ${JUDGE_NAMES[judge]} ${graded(grade)} every take`;
+  });
+  if (undefinedJudges.length === 0 || reasons.some((reason) => reason === null)) {
+    // The labels do not explain it, so print the report's own reason.
+    return [counts, [lead, { code: residual.status }, residual.why ? `: ${residual.why}.` : "."]];
+  }
+  const names = undefinedJudges.map(([judge]) => JUDGE_NAMES[judge]).join(" and ");
+  return [
+    counts,
+    [
+      lead,
+      { code: residual.status },
+      `: ${reasons.join(", and ")}, so Cohen's kappa for ${names} is undefined and the rule gives no verdict on which judge is closer to a human.`,
+    ],
+  ];
 }
 
 export function decidedByText(decidedBy: string, status: string): string {

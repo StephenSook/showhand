@@ -1,5 +1,16 @@
 import "./styles.css";
-import { loadIndex, loadTake, type Grades, type ReshowWindow, type SecondRow, type Take, type Verdict } from "./data";
+import {
+  checkResidualAgainstTakes,
+  loadIndex,
+  loadResidual,
+  loadTake,
+  type Grades,
+  type Residual,
+  type ReshowWindow,
+  type SecondRow,
+  type Take,
+  type Verdict,
+} from "./data";
 import { TimerClock, VideoClock, videoReady, type Clock } from "./clock";
 import { RobotScene, type SceneColors } from "./scene";
 import { UNIT_SPACE, frameAt, formatClock, replayDuration, sameWindows, secondAt, span, spans } from "./time";
@@ -11,9 +22,12 @@ import {
   catchLine,
   decidedByText,
   fusionCostLine,
+  gradeWord,
   guardCaught,
   limitText,
+  outsideView,
   reasonList,
+  residualSentences,
   unsentFailingSeconds,
   unsentSentence,
   valueText,
@@ -67,6 +81,7 @@ function verdictMark(verdict: Verdict | null): { cls: string; glyph: string; tex
 
 // ---- state ----
 const takes = new Map<string, Take>();
+let residual: Residual;
 let take: Take;
 let clock: Clock;
 let robot: RobotScene;
@@ -308,6 +323,58 @@ function renderCall(t: Take): void {
   byId<HTMLElement>("call-cost").textContent = fusionCostLine(t.grades.fusion);
 }
 
+// ---- the outside human grade beside that answer, from residual.json ----
+const JUDGE_LABELS = {
+  fused: ["Showhand's decision", "Showhand"],
+  tracking: ["Tracking error alone", "Tracking alone"],
+} as const;
+
+// A take the outside grader graded gets their grade, Showhand's decision and the tracking-only
+// decision, each with a mark and a word for whether it matches. A take they did not grade gets
+// nothing, not an empty row.
+function renderOutside(t: Take): void {
+  const box = byId<HTMLElement>("outside");
+  const list = byId<HTMLElement>("outside-grades");
+  const view = outsideView(residual, t.id);
+  box.hidden = view === null;
+  if (view === null) {
+    list.replaceChildren();
+    return;
+  }
+  list.replaceChildren(
+    el("div", { "data-judge": "grader" }, el("dt", {}, "Outside grader"), el("dd", {}, gradeWord(view.grader))),
+    ...view.judges.map((judge) => {
+      const [long, short] = JUDGE_LABELS[judge.judge];
+      return el(
+        "div",
+        { "data-judge": judge.judge, "data-agrees": String(judge.agrees) },
+        el("dt", {}, el("span", { class: "long" }, long), el("span", { class: "short" }, short)),
+        el(
+          "dd",
+          {},
+          `${gradeWord(judge.grade)} `,
+          el(
+            "span",
+            { class: "agree" },
+            el("span", { class: `mark ${judge.agrees ? "pass" : "fail"}`, "aria-hidden": "true" }, judge.agrees ? "✓" : "✗"),
+            judge.agrees ? "agrees" : "disagrees",
+          ),
+        ),
+      );
+    }),
+  );
+}
+
+// Once for the page: how often each judge matched the grader, and the pre-registered result.
+function renderResidual(r: Residual): void {
+  const [counts, verdict] = residualSentences(r);
+  byId<HTMLElement>("residual-counts").textContent = counts;
+  byId<HTMLElement>("residual-verdict").replaceChildren(
+    ...verdict.map((part) => (typeof part === "string" ? part : el("code", {}, part.code))),
+  );
+  byId<HTMLElement>("residual").hidden = false;
+}
+
 // A re-show button moves the recording and the robot to that second. It leaves play or pause as
 // it was. If the stage is partly off screen it scrolls into view, without animation when the
 // viewer asked for reduced motion.
@@ -512,6 +579,7 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   robot.bind(take);
   // The answer does not depend on the video, so it changes the moment the take does.
   renderCall(take);
+  renderOutside(take);
   renderRuns(take);
 
   const replaySeconds = replayDuration(take.replay.fps, take.replay.frames);
@@ -575,9 +643,12 @@ function wireControls(): void {
 }
 
 async function main(): Promise<void> {
-  const index = await loadIndex(BASE, fetch);
+  const [index, report] = await Promise.all([loadIndex(BASE, fetch), loadResidual(BASE, fetch)]);
   const loaded = await Promise.all(index.map((entry) => loadTake(BASE, entry, fetch)));
   for (const t of loaded) takes.set(t.id, t);
+  checkResidualAgainstTakes(report, takes);
+  residual = report;
+  renderResidual(residual);
   robot = await RobotScene.create(byId<HTMLCanvasElement>("robot"), `${BASE}/g1.glb`, sceneColors());
   renderTakes(index.map((entry) => entry.take));
   wireControls();

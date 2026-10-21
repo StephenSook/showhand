@@ -1,16 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { checkFrames, checkGrades, checkIndex, checkReplay, type ReplayManifest } from "../src/data";
+import {
+  checkFrames,
+  checkGrades,
+  checkIndex,
+  checkReplay,
+  checkResidual,
+  checkResidualAgainstTakes,
+  type Grades,
+  type ReplayManifest,
+} from "../src/data";
 import {
   callLine,
   callParts,
   catchLine,
   decidedByText,
   fusionCostLine,
+  gradeWord,
   guardCaught,
   limitText,
   METRICS,
+  outsideView,
   reasonLabel,
   reasonList,
+  residualSentences,
   unsentFailingSeconds,
   unsentSentence,
   valueText,
@@ -76,6 +88,104 @@ function grades() {
     } as Record<string, unknown>,
   };
 }
+
+// The shape tools/residual_report.py writes. These labels are test fixtures, never a result.
+function residual() {
+  return {
+    schema_version: 1,
+    label_source: "human",
+    n: 2,
+    fused_agreement: 0.5,
+    tracking_agreement: 1.0,
+    fused_kappa: 0.0,
+    tracking_kappa: null as number | null,
+    status: "evaluation_invalid",
+    why: "the report's own reason",
+    labels: [
+      { take_id: "take_0001", human: "accept", fused_judge: "reshow", tracking_alone: "accept" },
+      { take_id: "take_0002", human: "accept", fused_judge: "accept", tracking_alone: "accept" },
+    ],
+    inputs: { grades: "results/residual/human_grades.json" },
+  };
+}
+
+function rerate(r: ReturnType<typeof residual>) {
+  const match = (field: "fused_judge" | "tracking_alone") =>
+    r.labels.filter((row) => row[field] === row.human).length / r.labels.length;
+  return { ...r, n: r.labels.length, fused_agreement: match("fused_judge"), tracking_agreement: match("tracking_alone") };
+}
+
+describe("checkResidual", () => {
+  it("accepts the report tools/residual_report.py writes", () => {
+    expect(checkResidual(residual()).labels).toHaveLength(2);
+  });
+  it("refuses labels that did not come from a human", () => {
+    expect(() => checkResidual({ ...residual(), label_source: "synthetic" })).toThrow(/label_source is synthetic, not human/);
+  });
+  it("refuses a grade that is not accept or reshow, and a take graded twice", () => {
+    const keep = residual();
+    keep.labels[0]!.human = "keep";
+    expect(() => checkResidual(keep)).toThrow(/take_0001 human is keep/);
+    const twice = residual();
+    twice.labels[1]!.take_id = "take_0001";
+    expect(() => checkResidual(twice)).toThrow(/take_0001 is graded twice/);
+  });
+  it("refuses a count or agreement rate the labels do not give", () => {
+    expect(() => checkResidual({ ...residual(), n: 3 })).toThrow(/n is 3 for 2 labels/);
+    expect(() => checkResidual({ ...residual(), fused_agreement: 0 })).toThrow(/fused_agreement is 0, but the labels give 0.5/);
+    expect(() => checkResidual({ ...residual(), labels: [] })).toThrow(/no per-take labels/);
+  });
+  it("refuses a graded take whose fused decision is not the one grades.json shows", () => {
+    const takes = new Map([["take_0001", { grades: { fusion: { final: { decision: "accept" } } } as unknown as Grades }]]);
+    expect(() => checkResidualAgainstTakes(checkResidual(residual()), takes)).toThrow(
+      /take_0001 fused_judge is reshow, but grades.json decided accept/,
+    );
+    takes.get("take_0001")!.grades.fusion.final.decision = "reshow";
+    expect(() => checkResidualAgainstTakes(checkResidual(residual()), takes)).not.toThrow();
+  });
+});
+
+describe("outside grade copy", () => {
+  it("shows each graded take's grade and both judges from the report, and nothing for an ungraded take", () => {
+    const r = checkResidual(residual());
+    expect(outsideView(r, "take_0001")).toEqual({
+      grader: "accept",
+      judges: [
+        { judge: "fused", grade: "reshow", agrees: false },
+        { judge: "tracking", grade: "accept", agrees: true },
+      ],
+    });
+    expect(outsideView(r, "take_0003")).toBeNull();
+    expect(gradeWord("accept")).toBe("Accept");
+    expect(gradeWord("reshow")).toBe("Re-show");
+  });
+  it("follows the report when a grade in it changes", () => {
+    const changed = residual();
+    changed.labels[0]!.human = "reshow";
+    const view = outsideView(checkResidual(rerate(changed)), "take_0001")!;
+    expect(view.grader).toBe("reshow");
+    expect(view.judges.map((j) => j.agrees)).toEqual([true, false]);
+  });
+  it("counts each judge's matches from the labels and explains an undefined kappa from them", () => {
+    const [counts, verdict] = residualSentences(checkResidual(residual()));
+    expect(counts).toBe("Showhand's decision matched an outside grader on 1 of 2 takes, and tracking error alone matched on 2 of 2.");
+    expect(verdict).toEqual([
+      "The comparison was pre-registered before any grade arrived, and under its own rule the result is ",
+      { code: "evaluation_invalid" },
+      ": the grader and tracking error alone accepted every take, so Cohen's kappa for tracking error alone is undefined and the rule gives no verdict on which judge is closer to a human.",
+    ]);
+  });
+  it("changes the counts and the reason when the report changes", () => {
+    const changed = residual();
+    changed.labels[1]!.tracking_alone = "reshow";
+    const [counts, verdict] = residualSentences(checkResidual(rerate(changed)));
+    expect(counts).toMatch(/tracking error alone matched on 1 of 2\.$/);
+    // The labels no longer explain the undefined kappa, so the report's own reason prints.
+    expect(verdict.at(-1)).toBe(": the report's own reason.");
+    const evaluated = residualSentences(checkResidual({ ...residual(), status: "evaluated", tracking_kappa: 0.2 }))[1];
+    expect(evaluated).toEqual([expect.any(String), { code: "evaluated" }, "."]);
+  });
+});
 
 describe("checkIndex", () => {
   it("accepts a take list and refuses an empty or malformed one", () => {
