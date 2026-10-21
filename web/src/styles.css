@@ -118,8 +118,9 @@ h1 {
 
 @media (min-width: 1000px) {
   :root {
-    /* Short enough that the band, the stage and the seek bar all fit a 900 px tall window. */
-    --stage-h: min(51vh, 620px);
+    /* Short enough that the band (with its outside-grade row), the stage and the seek bar all fit
+       a 900 px tall window, even where the band's second line wraps. */
+    --stage-h: min(48vh, 620px);
   }
   .masthead {
     grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
