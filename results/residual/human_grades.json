@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "grader": "one outside grader, not named",
+  "grades": [
+    {
+      "take_id": "take_0525",
+      "human_accept": "accept",
+      "grade_text": "keep",
+      "graded_utc": "2026-10-21T07:52:01Z",
+      "how": "an outside robotics builder graded the emailed clip (phone take beside the simulated G1) keep or redo"
+    },
+    {
+      "take_id": "take_0526",
+      "human_accept": "accept",
+      "grade_text": "keep",
+      "graded_utc": "2026-10-21T07:52:01Z",
+      "how": "an outside robotics builder graded the emailed clip (phone take beside the simulated G1) keep or redo"
+    },
+    {
+      "take_id": "take_0527",
+      "human_accept": "accept",
+      "grade_text": "keep",
+      "graded_utc": "2026-10-21T07:52:01Z",
+      "how": "an outside robotics builder graded the emailed clip (phone take beside the simulated G1) keep or redo"
+    }
+  ]
+}

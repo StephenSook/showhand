@@ -108,6 +108,82 @@ def paired_agreement_residual(
     }
 
 
+def tracking_alone_accept(overall: dict[str, object], thresholds: dict[str, object]) -> bool:
+    """The pre-registered baseline judge: accept a whole take on tracking error alone, at the frozen
+    limits, failing only above a limit as src/showhand/metrics.py does."""
+    tracking = thresholds["tracking"]
+    assert isinstance(tracking, dict)
+    mean_ok = float(overall["tracking_mean_abs_error_rad"]) <= tracking["max_mean_abs_error_rad"]
+    p95_ok = float(overall["tracking_p95_abs_error_rad"]) <= tracking["max_p95_abs_error_rad"]
+    return mean_ok and p95_ok
+
+
+def agreement_summary(rows: list[ResidualRow]) -> dict[str, object]:
+    """The pre-registered secondary results: n, each judge's agreement rate and confusion matrix."""
+    if not rows:
+        raise ResidualInputError("at least one labeled take is required")
+    ordered = sorted(rows, key=lambda row: row.take_id)
+    human = np.asarray([row.human_accept for row in ordered], dtype=bool)
+    fused = np.asarray([row.fused_accept for row in ordered], dtype=bool)
+    tracking = np.asarray([row.tracking_accept for row in ordered], dtype=bool)
+    return {
+        "n": len(ordered),
+        "fused_agreement": round(float((fused == human).mean()), 6),
+        "tracking_agreement": round(float((tracking == human).mean()), 6),
+        "fused_confusion": _confusion(human, fused),
+        "tracking_confusion": _confusion(human, tracking),
+    }
+
+
+def prereg_report(
+    rows: list[ResidualRow], prereg: dict[str, object], *, label_source: str
+) -> dict[str, object]:
+    """Apply config/residual_prereg.yaml to labeled takes.
+
+    The primary result is the paired kappa difference. When either judge's kappa is undefined on the
+    observed labels, the pre-registered policy makes the evaluation invalid: the report says so and
+    why, and still gives the secondary results, which are always defined.
+    """
+    primary = prereg["primary"]
+    assert isinstance(primary, dict)
+    ordered = sorted(rows, key=lambda row: row.take_id)
+    human = np.asarray([row.human_accept for row in ordered], dtype=bool)
+    kappas: dict[str, object] = {}
+    undefined = []
+    for judge in ("fused", "tracking"):
+        values = np.asarray([getattr(row, f"{judge}_accept") for row in ordered], dtype=bool)
+        try:
+            kappas[f"{judge}_kappa"] = round(_cohen_kappa(human, values), 6)
+        except ResidualInputError:
+            kappas[f"{judge}_kappa"] = None
+            undefined.append(judge)
+    report: dict[str, object] = {
+        "schema_version": 1,
+        "label_source": label_source,
+        **agreement_summary(rows),
+        **kappas,
+    }
+    if undefined:
+        if prereg["observed_undefined_kappa"] != "evaluation_invalid":
+            raise ResidualInputError("unknown policy for an undefined observed kappa")
+        report["status"] = "evaluation_invalid"
+        report["why"] = (
+            f"Cohen kappa is undefined for the {' and '.join(undefined)} judge on these labels: "
+            "the human and that judge each gave every take the same label, so expected "
+            "agreement is 1"
+        )
+        return report
+    report["status"] = "evaluated"
+    report["primary"] = paired_agreement_residual(
+        rows,
+        replicates=int(primary["bootstrap_replicates"]),
+        seed=int(primary["bootstrap_seed"]),
+        label_source=label_source,
+        minimum_valid_fraction=float(prereg["minimum_valid_bootstrap_fraction"]),
+    )
+    return report
+
+
 def _cohen_kappa(reference: np.ndarray, judge: np.ndarray) -> float:
     observed = float((reference == judge).mean())
     reference_positive = float(reference.mean())
