@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { checkFrames, checkGrades, checkIndex, checkReplay, FLOATS_PER_GEOM } from "../src/data";
+import { checkFrames, checkGrades, checkIndex, checkReplay, checkResidual, FLOATS_PER_GEOM } from "../src/data";
 import { METRICS } from "../src/copy";
 
 const root = new URL("../public/replay/", import.meta.url);
@@ -19,6 +19,26 @@ const index = checkIndex(json("index.json"));
 describe("replay assets", () => {
   it("lists the three graded takes", () => {
     expect(index.map((entry) => entry.take)).toEqual(["take_0525", "take_0526", "take_0527"]);
+  });
+
+  it("copies results/residual/report.json unchanged as residual.json, and the page accepts it", () => {
+    const report = readFileSync(new URL("../../results/residual/report.json", import.meta.url));
+    expect(read("residual.json").equals(report)).toBe(true);
+    expect(checkResidual(json("residual.json")).labels.length).toBeGreaterThan(0);
+  });
+
+  it("gives each graded take the same fused decision its grades.json shows", () => {
+    const residual = checkResidual(json("residual.json"));
+    const listed = new Set(index.map((entry) => entry.take));
+    let compared = 0;
+    for (const label of residual.labels) {
+      if (!listed.has(label.take_id)) continue;
+      const grades = checkGrades(json(`${label.take_id}/grades.json`), label.take_id);
+      expect(label.fused_judge).toBe(grades.fusion.final.decision);
+      expect(label.fused_judge).toBe(record(label.take_id, "fusion.json").output.decision);
+      compared += 1;
+    }
+    expect(compared).toBeGreaterThan(0);
   });
 
   it("ships the robot model as a binary glTF", () => {

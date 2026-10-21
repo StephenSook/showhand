@@ -139,6 +139,79 @@ test("the page states how the two vision models count, as the code weighs them",
   await expect(page.locator("#unsent")).toContainText("2 to 3 s also failed and is not in the list");
 });
 
+test("each graded take shows the outside grade beside Showhand's decision, and the page states the pre-registered result", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const errors = await open(page);
+  // results/residual/report.json: the grader accepted take_0526, Showhand re-showed it, and
+  // tracking error alone accepted it.
+  const outside = page.locator("#outside");
+  await expect(outside).toBeVisible();
+  await expect(outside.locator("[data-judge=grader] dd")).toHaveText("Accept");
+  await expect(outside.locator("[data-judge=fused] dd")).toContainText("Re-show");
+  await expect(outside.locator("[data-judge=fused] dd")).toContainText("disagrees");
+  await expect(outside.locator("[data-judge=fused]")).toHaveAttribute("data-agrees", "false");
+  await expect(outside.locator("[data-judge=tracking] dd")).toContainText("Accept");
+  await expect(outside.locator("[data-judge=tracking] dd")).toContainText("agrees");
+  await expect(outside.locator("[data-judge=tracking]")).toHaveAttribute("data-agrees", "true");
+  // In the answer band, under the decision it is checked against.
+  const call = (await page.locator("#call").boundingBox())!;
+  const line = (await page.locator("#call-line").boundingBox())!;
+  const strip = (await outside.boundingBox())!;
+  expect(strip.y).toBeGreaterThanOrEqual(line.y + line.height);
+  expect(strip.y + strip.height).toBeLessThanOrEqual(call.y + call.height);
+
+  for (const take of ["0525", "0527"]) {
+    await page.getByRole("button", { name: new RegExp(`Take ${take}`) }).click();
+    await expect(page.locator("body")).toHaveAttribute("data-take", `take_${take}`);
+    await expect(outside.locator("[data-judge=grader] dd")).toHaveText("Accept");
+    await expect(outside.locator("[data-judge=fused]")).toHaveAttribute("data-agrees", "false");
+    await expect(outside.locator("[data-judge=tracking]")).toHaveAttribute("data-agrees", "true");
+  }
+
+  await expect(page.locator("#residual-counts")).toHaveText(
+    "Showhand's decision matched an outside grader on 0 of 3 takes, and tracking error alone matched on 3 of 3.",
+  );
+  await expect(page.locator("#residual-verdict code")).toHaveText("evaluation_invalid");
+  await expect(page.locator("#residual-verdict")).toContainText("the grader and tracking error alone accepted every take");
+  await expect(page.getByRole("link", { name: "Residual evaluation in the README" })).toHaveAttribute(
+    "href",
+    "https://github.com/StephenSook/showhand#residual-evaluation",
+  );
+  await expect(page.getByRole("link", { name: "results/residual/report.json" })).toHaveAttribute(
+    "href",
+    "https://github.com/StephenSook/showhand/blob/main/results/residual/report.json",
+  );
+  expect(errors).toEqual([]);
+});
+
+test("a take the outside grader did not grade shows nothing new, and the page follows the report it is served", async ({ page }) => {
+  // Serve residual.json without take_0527's grade, recounted so the page accepts it.
+  await page.route("**/replay/residual.json", async (route) => {
+    const response = await route.fetch();
+    type Label = { take_id: string; human: string; fused_judge: string; tracking_alone: string };
+    const report = (await response.json()) as { labels: Label[]; n: number; fused_agreement: number; tracking_agreement: number };
+    report.labels = report.labels.filter((label) => label.take_id !== "take_0527");
+    report.n = report.labels.length;
+    const share = (field: "fused_judge" | "tracking_alone") =>
+      report.labels.filter((label) => label[field] === label.human).length / report.n;
+    report.fused_agreement = share("fused_judge");
+    report.tracking_agreement = share("tracking_alone");
+    await route.fulfill({ response, json: report });
+  });
+  const errors = await open(page, "/?take=take_0527");
+  await expect(page.locator("#outside")).toBeHidden();
+  await expect(page.locator("#outside-grades > *")).toHaveCount(0);
+  await expect(page.locator("#residual-counts")).toHaveText(
+    "Showhand's decision matched an outside grader on 0 of 2 takes, and tracking error alone matched on 2 of 2.",
+  );
+  await page.getByRole("button", { name: /Take 0526/ }).click();
+  await expect(page.locator("#outside")).toBeVisible();
+  await expect(page.locator("#outside [data-judge=grader] dd")).toHaveText("Accept");
+  await page.getByRole("button", { name: /Take 0527/ }).click();
+  await expect(page.locator("#outside")).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test("says beside the video where each stage ran, with that take's recorded times", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, "/?take=take_0525");
