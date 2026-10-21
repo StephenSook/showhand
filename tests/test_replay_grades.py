@@ -25,6 +25,25 @@ def test_committed_grades_match_a_fresh_export(take: str) -> None:
     assert committed == fresh
 
 
+def test_committed_residual_is_the_report_byte_for_byte() -> None:
+    report = ROOT / "results" / "residual" / "report.json"
+    committed = (ROOT / "web" / "public" / "replay" / "residual.json").read_bytes()
+    assert committed == replay_grades.residual_bytes(report)
+    assert committed == report.read_bytes()
+
+
+def test_residual_export_refuses_labels_that_are_not_human(tmp_path: Path) -> None:
+    report = _json(ROOT / "results" / "residual" / "report.json")
+    synthetic = tmp_path / "report.json"
+    synthetic.write_text(json.dumps({**report, "label_source": "synthetic"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="not 'human'"):
+        replay_grades.residual_bytes(synthetic)
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({**report, "labels": []}), encoding="utf-8")
+    with pytest.raises(ValueError, match="no per-take labels"):
+        replay_grades.residual_bytes(empty)
+
+
 @pytest.mark.parametrize("take", TAKES)
 def test_runtime_copies_the_recorded_times_unrounded(take: str) -> None:
     base = RESULTS / take

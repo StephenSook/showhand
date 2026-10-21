@@ -11,6 +11,10 @@ and the recorded run times of each stage the page places.
 
 The frozen cutoffs from config/thresholds.yaml ride along, so the page prints each limit beside its
 measured value without keeping a second copy of the numbers.
+
+It also copies results/residual/report.json, byte for byte, to <web>/residual.json, so the page
+shows each take's outside human grade and the pre-registered result from that report and nowhere
+else. Pass --residual to read a different report.
 """
 
 from __future__ import annotations
@@ -152,12 +156,29 @@ def grades(results: Path, take: str, thresholds: dict[str, Any]) -> dict:
     }
 
 
+def residual_bytes(report: Path) -> bytes:
+    """The residual report exactly as committed, after checking it holds human labels.
+
+    The pre-registration forbids reporting synthetic labels as results, so a report whose labels
+    did not come from a human is refused rather than copied to the page.
+    """
+
+    raw = report.read_bytes()
+    value = json.loads(raw.decode("utf-8"))
+    if value.get("label_source") != "human":
+        raise ValueError(f"{report}: label_source is {value.get('label_source')!r}, not 'human'")
+    if not value.get("labels"):
+        raise ValueError(f"{report}: has no per-take labels")
+    return raw
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--results", type=Path, required=True)
     parser.add_argument("--web", type=Path, required=True)
     parser.add_argument("--takes", nargs="+", required=True)
     parser.add_argument("--thresholds", type=Path, default=Path("config/thresholds.yaml"))
+    parser.add_argument("--residual", type=Path, default=Path("results/residual/report.json"))
     args = parser.parse_args()
     thresholds = load_thresholds(args.thresholds)
     index = []
@@ -176,6 +197,9 @@ def main() -> int:
         encoding="utf-8",
         newline="\n",
     )
+    residual = args.web / "residual.json"
+    residual.write_bytes(residual_bytes(args.residual))
+    print(residual)
     return 0
 
 

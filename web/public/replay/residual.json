@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "label_source": "human",
+  "n": 3,
+  "fused_agreement": 0.0,
+  "tracking_agreement": 1.0,
+  "fused_confusion": {
+    "human_accept_judge_accept": 0,
+    "human_accept_judge_reshow": 3,
+    "human_reshow_judge_accept": 0,
+    "human_reshow_judge_reshow": 0
+  },
+  "tracking_confusion": {
+    "human_accept_judge_accept": 3,
+    "human_accept_judge_reshow": 0,
+    "human_reshow_judge_accept": 0,
+    "human_reshow_judge_reshow": 0
+  },
+  "fused_kappa": 0.0,
+  "tracking_kappa": null,
+  "status": "evaluation_invalid",
+  "why": "Cohen kappa is undefined for the tracking judge on these labels: the human and that judge each gave every take the same label, so expected agreement is 1",
+  "labels": [
+    {
+      "take_id": "take_0525",
+      "human": "accept",
+      "fused_judge": "reshow",
+      "tracking_alone": "accept"
+    },
+    {
+      "take_id": "take_0526",
+      "human": "accept",
+      "fused_judge": "reshow",
+      "tracking_alone": "accept"
+    },
+    {
+      "take_id": "take_0527",
+      "human": "accept",
+      "fused_judge": "reshow",
+      "tracking_alone": "accept"
+    }
+  ],
+  "inputs": {
+    "grades": "results/residual/human_grades.json",
+    "grades_sha256": "6774824e86b5ceeb53f5d0a36bf3aa00f1bcf79123f27f1618085a2a6e685103",
+    "prereg": "config/residual_prereg.yaml",
+    "prereg_sha256": "b0a7d011f4d790ac34ce38426ea59e329f24f659e812282c8b2b2ac5d49bd8d5",
+    "thresholds": "config/thresholds.yaml"
+  }
+}
