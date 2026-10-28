@@ -215,7 +215,7 @@ The private frames were sent only to Nebius Token Factory, whose inference servi
 
 The primary result is `evaluation_invalid`, which is what `observed_undefined_kappa` says to do: the human and the tracking-only judge gave every take the same grade, so that judge's Cohen kappa is undefined (the fused judge's is 0). Read plainly: on these three takes a human watching the clip let all of them through, and so did tracking error, while Showhand sent seconds back on every one, for balance (0.53 to 1.28 s out of balance against 0.5 s), foot slip, a 1.411 rad joint-error peak and Cosmos pose mismatches. Three takes from one grader say nothing about which is right for training data, and nothing here was tuned after the grades arrived. The synthetic unit-test rows are still never reported as results.
 
-The replay page built from [`web/`](web/README.md) shows, under each graded take's answer, the outside grade, Showhand's decision and the tracking-only decision with whether each matches, and states this result once. It reads them from `web/public/replay/residual.json`, which `tools/replay_grades.py` copies byte for byte from `report.json`; a test fails if the two differ.
+The replay page built from [`web/`](web/README.md) shows, in a table below the replay, one row per graded take: the outside grade, Showhand's decision and the tracking-only decision with whether each matches. It states this result once, under the table. It reads them from `web/public/replay/residual.json`, which `tools/replay_grades.py` copies byte for byte from `report.json`; a test fails if the two differ.
 
 ## Not done
 

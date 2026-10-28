@@ -81,7 +81,6 @@ function verdictMark(verdict: Verdict | null): { cls: string; glyph: string; tex
 
 // ---- state ----
 const takes = new Map<string, Take>();
-let residual: Residual;
 let take: Take;
 let clock: Clock;
 let robot: RobotScene;
@@ -323,56 +322,51 @@ function renderCall(t: Take): void {
   byId<HTMLElement>("call-cost").textContent = fusionCostLine(t.grades.fusion);
 }
 
-// ---- the outside human grade beside that answer, from residual.json ----
-const JUDGE_LABELS = {
-  fused: ["Showhand's decision", "Showhand"],
-  tracking: ["Tracking error alone", "Tracking alone"],
-} as const;
+// ---- the outside human grades, from residual.json ----
 
-// A take the outside grader graded gets their grade, Showhand's decision and the tracking-only
-// decision, each with a mark and a word for whether it matches. A take they did not grade gets
-// nothing, not an empty row.
-function renderOutside(t: Take): void {
-  const box = byId<HTMLElement>("outside");
-  const list = byId<HTMLElement>("outside-grades");
-  const view = outsideView(residual, t.id);
-  box.hidden = view === null;
-  if (view === null) {
-    list.replaceChildren();
-    return;
-  }
-  list.replaceChildren(
-    el("div", { "data-judge": "grader" }, el("dt", {}, "Outside grader"), el("dd", {}, gradeWord(view.grader))),
-    ...view.judges.map((judge) => {
-      const [long, short] = JUDGE_LABELS[judge.judge];
+// Once for the page, below the replay: how often each judge matched the grader, one row per graded
+// take (their grade, then Showhand's decision and the tracking-only decision, each with a mark and
+// a word for whether it matches), and the pre-registered result. A take the grader did not grade
+// has no row.
+function renderResidual(r: Residual): void {
+  const [counts, verdict] = residualSentences(r);
+  byId<HTMLElement>("residual-counts").textContent = counts;
+  byId<HTMLElement>("residual-rows").replaceChildren(
+    ...r.labels.map((label) => {
+      const view = outsideView(r, label.take_id)!;
       return el(
-        "div",
-        { "data-judge": judge.judge, "data-agrees": String(judge.agrees) },
-        el("dt", {}, el("span", { class: "long" }, long), el("span", { class: "short" }, short)),
-        el(
-          "dd",
-          {},
-          `${gradeWord(judge.grade)} `,
+        "tr",
+        { "data-take": label.take_id },
+        el("th", { scope: "row" }, `Take ${takeNumber(label.take_id)}`),
+        el("td", { "data-judge": "grader" }, gradeWord(view.grader)),
+        ...view.judges.map((judge) =>
           el(
-            "span",
-            { class: "agree" },
-            el("span", { class: `mark ${judge.agrees ? "pass" : "fail"}`, "aria-hidden": "true" }, judge.agrees ? "✓" : "✗"),
-            judge.agrees ? "agrees" : "disagrees",
+            "td",
+            { "data-judge": judge.judge, "data-agrees": String(judge.agrees) },
+            `${gradeWord(judge.grade)} `,
+            el(
+              "span",
+              { class: "agree" },
+              el("span", { class: `mark ${judge.agrees ? "pass" : "fail"}`, "aria-hidden": "true" }, judge.agrees ? "✓" : "✗"),
+              judge.agrees ? "agrees" : "disagrees",
+            ),
           ),
         ),
       );
     }),
   );
-}
-
-// Once for the page: how often each judge matched the grader, and the pre-registered result.
-function renderResidual(r: Residual): void {
-  const [counts, verdict] = residualSentences(r);
-  byId<HTMLElement>("residual-counts").textContent = counts;
   byId<HTMLElement>("residual-verdict").replaceChildren(
     ...verdict.map((part) => (typeof part === "string" ? part : el("code", {}, part.code))),
   );
   byId<HTMLElement>("residual").hidden = false;
+}
+
+// The row of the take on screen is marked, so the table reads against the replay above it.
+function markResidualTake(id: string): void {
+  document.querySelectorAll<HTMLTableRowElement>("#residual-rows tr").forEach((row) => {
+    if (row.dataset.take === id) row.setAttribute("aria-current", "true");
+    else row.removeAttribute("aria-current");
+  });
 }
 
 // A re-show button moves the recording and the robot to that second. It leaves play or pause as
@@ -579,7 +573,7 @@ async function selectTake(id: string, userAction: boolean): Promise<void> {
   robot.bind(take);
   // The answer does not depend on the video, so it changes the moment the take does.
   renderCall(take);
-  renderOutside(take);
+  markResidualTake(id);
   renderRuns(take);
 
   const replaySeconds = replayDuration(take.replay.fps, take.replay.frames);
@@ -647,8 +641,7 @@ async function main(): Promise<void> {
   const loaded = await Promise.all(index.map((entry) => loadTake(BASE, entry, fetch)));
   for (const t of loaded) takes.set(t.id, t);
   checkResidualAgainstTakes(report, takes);
-  residual = report;
-  renderResidual(residual);
+  renderResidual(report);
   robot = await RobotScene.create(byId<HTMLCanvasElement>("robot"), `${BASE}/g1.glb`, sceneColors());
   renderTakes(index.map((entry) => entry.take));
   wireControls();
