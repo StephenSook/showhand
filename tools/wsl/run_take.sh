@@ -147,6 +147,31 @@ wait_until_dead() {
   return 1
 }
 
+# True once the replay has written a timing record for this run with completion_status completed,
+# checked every 0.1 s for up to $1 seconds. The record is written only after the simulator's
+# completion acknowledgement.
+replay_completed_within() {
+  local ticks=$(($1 * 10))
+  local i
+  for ((i = 0; i < ticks; i++)); do
+    if python3 - "$output_root/replay_timing.json" "$run_id" <<'PY' 2>/dev/null; then
+import json
+import sys
+
+try:
+    timing = json.loads(open(sys.argv[1], encoding="utf-8").read())
+except (OSError, ValueError):
+    sys.exit(1)
+complete = timing.get("run_id") == sys.argv[2] and timing.get("completion_status") == "completed"
+sys.exit(0 if complete else 1)
+PY
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
 if [ -z "${NEBIUS_API_KEY-}" ]; then
   echo "NEBIUS_API_KEY is unset" >&2
   exit 2
@@ -511,6 +536,13 @@ while kill -0 "$replay_pid" 2>/dev/null; do
     break
   fi
   if ! kill -0 "$sonic_pid" 2>/dev/null; then
+    # SONIC stops on its own once the simulator has acknowledged completion. The replay writes its
+    # timing record only after that acknowledgement and can still be tearing down CUDA when SONIC
+    # exits, so a completed record for this run means SONIC ended after the replay, not during it.
+    # SONIC's exit status, run-end marker and frame receipt are still checked below.
+    if replay_completed_within 5; then
+      break
+    fi
     arm_failed=1
     kill -TERM -"$replay_pid" 2>/dev/null || true
     echo "SONIC pty exited during replay" > "$output_root/driver/sonic-status/failed"
